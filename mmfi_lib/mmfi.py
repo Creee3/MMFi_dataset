@@ -386,7 +386,17 @@ class MMFi_Dataset(Dataset):
                 data = data.copy().reshape(-1, 5)
                 # data = data[:, :3]
         elif mod == 'wifi-csi':
-            data = scio.loadmat(frame)['CSIamp']
+            mat = scio.loadmat(frame)
+            if 'CSIamp' not in mat:
+                raise KeyError(f"CSIamp not found in {frame}")
+            data = mat['CSIamp']
+            if not isinstance(data, np.ndarray):
+                raise TypeError(
+                    f"CSIamp in {frame} is {type(data).__name__}, expected numpy.ndarray")
+            if data.ndim != 3 or data.shape[2] < 10:
+                raise ValueError(
+                    f"CSIamp in {frame} has shape {getattr(data, 'shape', None)}, "
+                    "expected [*, *, >=10]")
             data[np.isinf(data)] = np.nan
             for i in range(10):  # 32
                 temp_col = data[:, :, i]

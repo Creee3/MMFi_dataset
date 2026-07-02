@@ -9,6 +9,8 @@ def main():
     grid_path = os.path.abspath("run_strict_mpjpe_grid_search.py")
     cmc_auto_path = os.path.abspath("run_cmc_gh_tail_auto.py")
     student_val_auto_path = os.path.abspath("run_cmc_student_val_auto.py")
+    csi_check_path = os.path.abspath("check_wifi_csi_frames.py")
+    mmfi_path = os.path.abspath("mmfi_lib/mmfi.py")
     config_path = os.path.abspath("config.yaml")
 
     with open(common_path, "r", encoding="utf-8") as f:
@@ -23,6 +25,10 @@ def main():
         cmc_auto_text = f.read()
     with open(student_val_auto_path, "r", encoding="utf-8") as f:
         student_val_auto_text = f.read()
+    with open(csi_check_path, "r", encoding="utf-8") as f:
+        csi_check_text = f.read()
+    with open(mmfi_path, "r", encoding="utf-8") as f:
+        mmfi_text = f.read()
     with open(config_path, "r", encoding="utf-8") as f:
         config_text = f.read()
 
@@ -60,6 +66,10 @@ def main():
         "cmc_auto_model_type": '"lupi"' in cmc_auto_text and '"--model_type"' in cmc_auto_text,
         "student_val_auto_path": student_val_auto_path,
         "student_val_auto_split": "teacher_student_split" in student_val_auto_text,
+        "student_val_auto_cmc_immediate": "default=1" in student_val_auto_text and "default=0" in student_val_auto_text,
+        "csi_check_path": csi_check_path,
+        "csi_check_has_validation": "CSIamp" in csi_check_text and "expected third dim >= 10" in csi_check_text,
+        "read_frame_reports_bad_csi": "expected numpy.ndarray" in mmfi_text,
         "config_teacher_student_split": "teacher_student_split:" in config_text,
         "grid_split_arg": "args.split" in grid_text and "teacher_student_split" in grid_text,
     }
@@ -94,6 +104,9 @@ def main():
         checks["cmc_auto_mode"],
         checks["cmc_auto_model_type"],
         checks["student_val_auto_split"],
+        checks["student_val_auto_cmc_immediate"],
+        checks["csi_check_has_validation"],
+        checks["read_frame_reports_bad_csi"],
         checks["config_teacher_student_split"],
         checks["grid_split_arg"],
     ]
