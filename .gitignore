@@ -1,0 +1,47 @@
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environments
+.venv/
+venv/
+env/
+
+# Dataset and external baselines
+data_base/
+Wi-Pose/
+
+# Training outputs / checkpoints
+experiment_results/*
+!experiment_results/*.md
+strict_offline_runs/
+*.pth
+*.pt
+*.ckpt
+*.onnx
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Large raw/intermediate data
+*.mat
+*.npy
+*.npz
+*.bin
+*.png
+*.jpg
+*.jpeg
+
+# Local documents and downloaded papers
+*.pdf
+*.docx
+*.zip
