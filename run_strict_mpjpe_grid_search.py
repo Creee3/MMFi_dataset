@@ -63,6 +63,40 @@ def read_final_test(run_dir: str):
     }
 
 
+def read_val_report(run_dir: str):
+    complete_path = os.path.join(run_dir, "train_complete.json")
+    hist_path = os.path.join(run_dir, "history.json")
+    if not os.path.isfile(complete_path):
+        return None
+    with open(complete_path, "r", encoding="utf-8") as f:
+        complete = json.load(f)
+    best_val = complete.get("best_val_mpjpe")
+    if best_val is None:
+        return None
+
+    pa_mpjpe = 0.0
+    pck20 = 0.0
+    pck50 = 0.0
+    if os.path.isfile(hist_path):
+        with open(hist_path, "r", encoding="utf-8") as f:
+            history = json.load(f)
+        if history:
+            best_row = min(history, key=lambda row: float(row.get("mpjpe", 1e9)))
+            pa_mpjpe = float(best_row.get("pa_mpjpe", 0.0)) * 1000.0
+            pck20 = float(best_row.get("pck@20", 0.0))
+            pck50 = float(best_row.get("pck@50", 0.0))
+
+    return {
+        "mpjpe": float(best_val) * 1000.0,
+        "pa_mpjpe": pa_mpjpe,
+        "pck@20": pck20,
+        "pck@50": pck50,
+        "checkpoint": complete.get("checkpoint", "best.pth"),
+        "checkpoint_source": complete.get("checkpoint_source", "validation"),
+        "report_split": "student_validation",
+    }
+
+
 def run_command(cmd, seed=None):
     env = os.environ.copy()
     if seed is not None:
@@ -110,7 +144,7 @@ def run_eval_command(dataset_root, config_file, run_dir, model_type, device,
 
 def build_base_args(args):
     return [
-        "--split", "four_way_split",
+        "--split", args.split,
         "--window", str(args.window),
         "--stride", str(args.stride),
         "--val_batch_size", str(args.val_batch_size),
@@ -207,6 +241,14 @@ def make_cmc_jobs(args):
             f"{stability_suffix(aug_noise, aug_freq, aug_time, rel, root, bone, robust, head_type)}"
             f"_lc{fmt_float(lam)}_cs{start}_cr{ramp}_cg{fmt_float(grad)}"
         )
+        if args.topk_ckpts > 0:
+            tag += f"_topk{args.topk_ckpts}"
+        if args.topk_soup:
+            tag += "_soup"
+        if args.tail_ckpts > 0:
+            tag += f"_tail{args.tail_ckpts}"
+        if args.tail_soup:
+            tag += "_tailsoup"
         extra = [
             "--lr", str(lr),
             "--batch_size", str(bs),
@@ -224,6 +266,14 @@ def make_cmc_jobs(args):
             "--cmc_ramp_epochs", str(ramp),
             "--cmc_encoder_grad_scale", str(grad),
         ] + stability_args(aug_noise, aug_freq, aug_time, rel, root, bone, robust, head_type)
+        if args.topk_ckpts > 0:
+            extra += ["--topk_ckpts", str(args.topk_ckpts)]
+        if args.topk_soup:
+            extra += ["--topk_soup"]
+        if args.tail_ckpts > 0:
+            extra += ["--tail_ckpts", str(args.tail_ckpts)]
+        if args.tail_soup:
+            extra += ["--tail_soup"]
         yield tag, "train_lupi_rgb_teacher_mpjpe.py", "lupi", extra
 
 
@@ -232,6 +282,9 @@ def main():
     parser.add_argument("dataset_root")
     parser.add_argument("config_file")
     parser.add_argument("--mode", choices=["baseline", "cmc", "both"], default="both")
+    parser.add_argument("--split", type=str, default="four_way_split",
+                        choices=["random_split", "cross_subject_split", "cross_scene_split",
+                                 "four_way_split", "teacher_student_split"])
     parser.add_argument("--teacher_ckpt", default=DEFAULT_TEACHER)
     parser.add_argument("--seeds", nargs="+", type=int, default=[0])
     parser.add_argument("--window", type=int, default=32)
@@ -244,13 +297,13 @@ def main():
     parser.add_argument("--patience", type=int, default=0)
     parser.add_argument("--swa_start", type=int, default=20)
     parser.add_argument("--topk_ckpts", type=int, default=0,
-                        help="Baseline only: keep K validation checkpoints")
+                        help="Keep K validation checkpoints for diagnostics/soup")
     parser.add_argument("--topk_soup", action="store_true",
-                        help="Baseline only: average saved top-k checkpoints")
+                        help="Average saved top-k checkpoints")
     parser.add_argument("--tail_ckpts", type=int, default=0,
-                        help="Baseline only: keep K final epoch checkpoints")
+                        help="Keep K final epoch checkpoints for diagnostics/soup")
     parser.add_argument("--tail_soup", action="store_true",
-                        help="Baseline only: average saved tail checkpoints")
+                        help="Average saved tail checkpoints")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--lrs", nargs="+", type=float, default=[7e-5, 1.03e-4, 1.5e-4])
@@ -286,7 +339,10 @@ def main():
 
     ensure_dir(args.results_root)
     if args.mode in ("cmc", "both") and not os.path.isfile(args.teacher_ckpt):
-        raise FileNotFoundError(args.teacher_ckpt)
+        if args.dry_run:
+            print(f"WARNING: teacher checkpoint not found for dry run: {args.teacher_ckpt}")
+        else:
+            raise FileNotFoundError(args.teacher_ckpt)
 
     jobs = []
     if args.mode in ("baseline", "both"):
@@ -327,33 +383,39 @@ def main():
                 "extra_args": extra,
                 "short_run_dirs": bool(args.short_run_dirs),
             }, os.path.join(run_dir, "job_info.json"))
-            final_test = read_final_test(run_dir)
-            if final_test is not None:
-                print(f"Skip existing: {run_dir} MPJPE={final_test['mpjpe']:.2f}mm")
-                seed_metrics.append(final_test)
+            metric = read_final_test(run_dir) if args.split == "four_way_split" else read_val_report(run_dir)
+            if metric is not None:
+                print(f"Skip existing: {run_dir} MPJPE={metric['mpjpe']:.2f}mm")
+                seed_metrics.append(metric)
                 continue
 
             best_path = os.path.join(run_dir, "best.pth")
             complete_path = os.path.join(run_dir, "train_complete.json")
             if os.path.isfile(best_path) and os.path.isfile(complete_path):
-                print(f"Found existing checkpoint without final_test.json: {run_dir}")
-                print("Running final-test evaluation only...")
-                eval_returncode = run_eval_command(
-                    args.dataset_root, args.config_file, run_dir, model_type,
-                    args.device, args.num_workers, args.val_batch_size)
-                if eval_returncode == 0:
-                    final_test = read_final_test(run_dir)
-                    if final_test is not None:
-                        seed_metrics.append(final_test)
-                        continue
-                print(f"EVAL FAILED: {tag} seed={seed} returncode={eval_returncode}")
+                if args.split == "four_way_split":
+                    print(f"Found existing checkpoint without final_test.json: {run_dir}")
+                    print("Running final-test evaluation only...")
+                    eval_returncode = run_eval_command(
+                        args.dataset_root, args.config_file, run_dir, model_type,
+                        args.device, args.num_workers, args.val_batch_size)
+                    if eval_returncode == 0:
+                        final_test = read_final_test(run_dir)
+                        if final_test is not None:
+                            seed_metrics.append(final_test)
+                            continue
+                    print(f"EVAL FAILED: {tag} seed={seed} returncode={eval_returncode}")
+                    continue
+                metric = read_val_report(run_dir)
+                if metric is not None:
+                    seed_metrics.append(metric)
+                    continue
                 continue
             if os.path.isfile(best_path) and not os.path.isfile(complete_path):
                 print(f"Existing incomplete run found, retraining: {run_dir}")
 
             cmd = [sys.executable, "-u", entry, args.dataset_root, args.config_file]
             cmd += base_args + extra + ["--run_dir", run_dir]
-            if not args.inline_final_test:
+            if not args.inline_final_test and args.split == "four_way_split":
                 cmd += ["--skip_final_test"]
 
             print("\n" + "=" * 80)
@@ -364,16 +426,16 @@ def main():
             if returncode != 0:
                 print(f"FAILED: {tag} seed={seed} returncode={returncode}")
                 continue
-            if not args.inline_final_test:
+            if not args.inline_final_test and args.split == "four_way_split":
                 eval_returncode = run_eval_command(
                     args.dataset_root, args.config_file, run_dir, model_type,
                     args.device, args.num_workers, args.val_batch_size)
                 if eval_returncode != 0:
                     print(f"EVAL FAILED: {tag} seed={seed} returncode={eval_returncode}")
                     continue
-            final_test = read_final_test(run_dir)
-            if final_test is not None:
-                seed_metrics.append(final_test)
+            metric = read_final_test(run_dir) if args.split == "four_way_split" else read_val_report(run_dir)
+            if metric is not None:
+                seed_metrics.append(metric)
 
         if seed_metrics:
             import numpy as np

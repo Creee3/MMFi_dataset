@@ -132,6 +132,47 @@ def decode_four_way_config(config):
     return dataset_config
 
 
+def decode_teacher_student_config(config):
+    """Decode a no-test teacher-student split: shared train / teacher val / student val."""
+    all_actions = ['A01', 'A02', 'A03', 'A04', 'A05', 'A06', 'A07', 'A08', 'A09', 'A10', 'A11', 'A12', 'A13', 'A14',
+                   'A15', 'A16', 'A17', 'A18', 'A19', 'A20', 'A21', 'A22', 'A23', 'A24', 'A25', 'A26', 'A27']
+    if config['protocol'] == 'protocol1':
+        protocol_actions = ['A02', 'A03', 'A04', 'A05', 'A13', 'A14', 'A17', 'A18', 'A19', 'A20', 'A21', 'A22', 'A23', 'A27']
+    elif config['protocol'] == 'protocol2':
+        protocol_actions = ['A01', 'A06', 'A07', 'A08', 'A09', 'A10', 'A11', 'A12', 'A15', 'A16', 'A24', 'A25', 'A26']
+    else:
+        protocol_actions = all_actions
+
+    def resolve_actions(action_cfg):
+        if action_cfg == 'all':
+            return protocol_actions
+        return action_cfg
+
+    split_cfg = config['teacher_student_split']
+
+    dataset_config = {
+        'train_dataset': {
+            'modality': config['modality'],
+            'split': 'training',
+            'data_form': {s: resolve_actions(split_cfg['train_dataset']['actions'])
+                          for s in split_cfg['train_dataset']['subjects']}
+        },
+        'teacher_val_dataset': {
+            'modality': config['modality'],
+            'split': 'validation',
+            'data_form': {s: resolve_actions(split_cfg['teacher_val_dataset']['actions'])
+                          for s in split_cfg['teacher_val_dataset']['subjects']}
+        },
+        'student_val_dataset': {
+            'modality': config['modality'],
+            'split': 'validation',
+            'data_form': {s: resolve_actions(split_cfg['student_val_dataset']['actions'])
+                          for s in split_cfg['student_val_dataset']['subjects']}
+        },
+    }
+    return dataset_config
+
+
 class MMFi_Database:
     def __init__(self, data_root):
         self.data_root = data_root
@@ -419,6 +460,17 @@ def make_four_way_dataset(dataset_root, config):
         database, config['data_unit'], **config_dataset['student_val_dataset'])
     test_dataset = MMFi_Dataset(database, config['data_unit'], **config_dataset['test_dataset'])
     return train_dataset, teacher_val_dataset, student_val_dataset, test_dataset
+
+
+def make_teacher_student_dataset(dataset_root, config):
+    database = MMFi_Database(dataset_root)
+    config_dataset = decode_teacher_student_config(config)
+    train_dataset = MMFi_Dataset(database, config['data_unit'], **config_dataset['train_dataset'])
+    teacher_val_dataset = MMFi_Dataset(
+        database, config['data_unit'], **config_dataset['teacher_val_dataset'])
+    student_val_dataset = MMFi_Dataset(
+        database, config['data_unit'], **config_dataset['student_val_dataset'])
+    return train_dataset, teacher_val_dataset, student_val_dataset
 
 
 def collate_fn_padd(batch):

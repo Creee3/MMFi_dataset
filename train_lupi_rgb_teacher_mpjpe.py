@@ -24,6 +24,13 @@ from common import (
     eval_temporal_model,
     load_config, get_loaders, get_test_loader, add_common_args
 )
+from train_baseline_mpjpe import (
+    checkpoint_payload,
+    maybe_save_topk_checkpoint,
+    maybe_save_tail_checkpoint,
+    build_topk_soup,
+    build_tail_soup,
+)
 
 
 def train_lupi_rgb_teacher(args, train_loader, val_loader, device, teacher_ckpt=None):
@@ -50,6 +57,8 @@ def train_lupi_rgb_teacher(args, train_loader, val_loader, device, teacher_ckpt=
     print(f"lambda_rel_pose: {args.lambda_rel_pose}, lambda_root: {args.lambda_root}")
     print(f"lambda_bone: {args.lambda_bone}, pose_head_type: {args.pose_head_type}")
     print(f"subject_robust_weight: {args.subject_robust_weight}")
+    print(f"Top-k checkpoints: {args.topk_ckpts}, soup: {args.topk_soup}")
+    print(f"Tail checkpoints: {args.tail_ckpts}, soup: {args.tail_soup}")
     print(f"Augmentation: noise={args.aug_noise}, freq_mask={args.aug_freq_mask}, "
           f"time_mask={args.aug_time_mask}")
     print(f"★ Mixup alpha: {args.mixup_alpha}  (0=关闭)")
@@ -97,9 +106,11 @@ def train_lupi_rgb_teacher(args, train_loader, val_loader, device, teacher_ckpt=
     swa_started = False
 
     best_path = os.path.join(run_dir, "best.pth")
+    last_path = os.path.join(run_dir, "last.pth")
     hist_path = os.path.join(run_dir, "history.json")
 
-    history, best_metric, no_improve = [], 1e9, 0
+    history, topk_entries, tail_entries = [], [], []
+    best_metric, best_source, no_improve = 1e9, "none", 0
 
     class WiFiOnlyWrapper(nn.Module):
         def __init__(self, m):
@@ -242,26 +253,42 @@ def train_lupi_rgb_teacher(args, train_loader, val_loader, device, teacher_ckpt=
             "train_cmc":     running_cmc     / len(train_loader),
             "train_distill": running_distill / len(train_loader),
         })
+        torch.save(checkpoint_payload(model, args, "regular"), last_path)
 
         if mpjpe < best_metric:
             best_metric = mpjpe
+            best_source = "regular"
             no_improve = 0
-            torch.save({
-                "model": model.state_dict(),
-                "args": vars(args),
-                "checkpoint_source": "regular",
-            }, best_path)
+            torch.save(checkpoint_payload(model, args, "regular"), best_path)
             print(f"  ✅ New best! MPJPE={mpjpe*1000:.1f}mm | "
                   f"PCK@20={pck.get('pck@20',0):.1f}% | "
                   f"PCK@50={pck.get('pck@50',0):.1f}%")
         else:
             no_improve += 1
-            if args.patience > 0 and no_improve >= args.patience:
-                print(f"  ⏹ Early stopping! No improvement for "
-                      f"{args.patience} epochs")
-                break
+
+        topk_entries = maybe_save_topk_checkpoint(
+            args, run_dir, model, ep, mpjpe, pa, pck, topk_entries)
+        tail_entries = maybe_save_tail_checkpoint(
+            args, run_dir, model, ep, mpjpe, pa, pck, tail_entries)
 
         save_json(history, hist_path)
+
+        if args.patience > 0 and no_improve >= args.patience:
+            print(f"  ⏹ Early stopping! No improvement for "
+                  f"{args.patience} epochs")
+            break
+
+    best_metric, soup_source = build_topk_soup(
+        args, run_dir, model, val_loader, device,
+        topk_entries, best_metric, best_path)
+    if soup_source is not None:
+        best_source = soup_source
+
+    best_metric, tail_source = build_tail_soup(
+        args, run_dir, model, val_loader, device,
+        tail_entries, best_metric, best_path)
+    if tail_source is not None:
+        best_source = tail_source
 
     if swa_started:
         print("\n🔄 SWA: 更新 BatchNorm 统计量...")
@@ -294,6 +321,7 @@ def train_lupi_rgb_teacher(args, train_loader, val_loader, device, teacher_ckpt=
 
         if swa_mpjpe < best_metric:
             best_metric = swa_mpjpe
+            best_source = "swa"
             torch.save(swa_payload, best_path)
             print(f"  ✅ SWA model is new best! Saved to best.pth and best_swa.pth")
         else:
@@ -310,8 +338,15 @@ def train_lupi_rgb_teacher(args, train_loader, val_loader, device, teacher_ckpt=
     save_json({
         "status": "complete",
         "best_val_mpjpe": best_metric,
+        "checkpoint_source": best_source,
         "completed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "checkpoint": "best.pth",
+        "topk_ckpts": int(getattr(args, "topk_ckpts", 0) or 0),
+        "topk_soup": bool(getattr(args, "topk_soup", False)),
+        "topk_soup_replace_best": bool(getattr(args, "topk_soup_replace_best", False)),
+        "tail_ckpts": int(getattr(args, "tail_ckpts", 0) or 0),
+        "tail_soup": bool(getattr(args, "tail_soup", False)),
+        "tail_soup_replace_best": bool(getattr(args, "tail_soup_replace_best", False)),
     }, os.path.join(run_dir, "train_complete.json"))
     sys.stdout = logger.terminal
     logger.close()
@@ -388,6 +423,18 @@ def main():
                         help="Auxiliary bone-length consistency loss weight")
     parser.add_argument("--subject_robust_weight", type=float, default=0.0,
                         help="Blend average pose loss with worst-subject pose loss")
+    parser.add_argument("--topk_ckpts", type=int, default=0,
+                        help="Keep the best K validation checkpoints for diagnostics/soup; 0 disables")
+    parser.add_argument("--topk_soup", action="store_true",
+                        help="Average the saved top-k checkpoints and compare the soup on validation")
+    parser.add_argument("--topk_soup_replace_best", action="store_true",
+                        help="Allow top-k soup to overwrite best.pth when it improves validation")
+    parser.add_argument("--tail_ckpts", type=int, default=0,
+                        help="Keep the last K epoch checkpoints for diagnostics/soup; 0 disables")
+    parser.add_argument("--tail_soup", action="store_true",
+                        help="Average the saved tail checkpoints and compare the soup on validation")
+    parser.add_argument("--tail_soup_replace_best", action="store_true",
+                        help="Allow tail soup to overwrite best.pth when it improves validation")
     parser.add_argument("--skip_final_test", action="store_true",
                         help="Only train/save checkpoints; final-test evaluation can run separately")
     parser.add_argument("--run_dir", type=str, default=None,

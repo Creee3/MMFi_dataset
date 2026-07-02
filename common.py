@@ -18,7 +18,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 import yaml
 
-from mmfi_lib.mmfi import make_dataset, make_four_way_dataset, make_dataloader
+from mmfi_lib.mmfi import (
+    make_dataset,
+    make_four_way_dataset,
+    make_teacher_student_dataset,
+    make_dataloader,
+)
 from mmfi_lib.evaluate import calulate_error
 
 # ----------------------------- 随机种子 -----------------------------
@@ -571,6 +576,9 @@ class TemporalLUPICMC_CBAM(nn.Module):
         feat = self.wifi_encoder(wifi_window)
         return self.pose_head(feat), feat
 
+    def forward(self, wifi_window):
+        return self.forward_wifi(wifi_window)
+
 
 # ----------------------------- InfoNCE Loss -----------------------------
 def info_nce_loss(z_w, z_v, tau=0.1):
@@ -666,6 +674,9 @@ def get_loaders(dataset_root, cfg, window, stride, batch_size, val_batch_size,
     if cfg.get("split_to_use") == "four_way_split":
         train_ds_base, teacher_val_ds_base, student_val_ds_base, _ = make_four_way_dataset(dataset_root, cfg)
         val_ds_base = teacher_val_ds_base if role == "teacher" else student_val_ds_base
+    elif cfg.get("split_to_use") == "teacher_student_split":
+        train_ds_base, teacher_val_ds_base, student_val_ds_base = make_teacher_student_dataset(dataset_root, cfg)
+        val_ds_base = teacher_val_ds_base if role == "teacher" else student_val_ds_base
     else:
         train_ds_base, val_ds_base = make_dataset(dataset_root, cfg)
     train_ds = TemporalWindowWrapper(
@@ -745,6 +756,7 @@ def add_common_args(parser):
 
     # Split
     parser.add_argument("--split", type=str, default="cross_subject_split",
-                        choices=["random_split", "cross_subject_split", "cross_scene_split", "four_way_split"])
+                        choices=["random_split", "cross_subject_split", "cross_scene_split",
+                                 "four_way_split", "teacher_student_split"])
 
     return parser
