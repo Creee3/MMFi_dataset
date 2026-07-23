@@ -589,7 +589,14 @@ def main():
 
     cfg = load_config(args.config_file, args.split)
 
+    print(f"Protocol: {cfg.get('protocol', 'unknown_protocol')}")
     print(f"Split: {args.split} | Window: {args.window} | Stride: {args.stride}")
+    heldout_cfg = cfg.get("heldout_split", {})
+    print("Held-out split: "
+          f"enabled={heldout_cfg.get('enabled', False)} | "
+          f"unit={heldout_cfg.get('unit', 'window')} | "
+          f"test_size={heldout_cfg.get('test_size', 0.5)} | "
+          f"seed={heldout_cfg.get('random_seed', 41)}")
     print(f"Dropout: {args.dropout} | Mixup alpha: {args.mixup_alpha}")
 
     train_ds, val_ds, train_loader, val_loader = get_loaders(
@@ -599,7 +606,7 @@ def main():
     print(f"Val   samples (windowed): {len(val_ds)}")
 
     best_metric, run_dir = train_baseline(args, train_loader, val_loader, device)
-    if args.split == "four_way_split" and not args.skip_final_test:
+    if args.split != "teacher_student_split" and not args.skip_final_test:
         test_ds, test_loader = get_test_loader(
             args.dataset_root, cfg, args.window, args.stride,
             args.val_batch_size, num_workers=args.num_workers)

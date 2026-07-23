@@ -1,6 +1,7 @@
 import os
 import scipy.io as scio
 import glob
+import time
 try:
     import cv2
 except ImportError:
@@ -9,6 +10,45 @@ except ImportError:
 import torch
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
+
+
+def _read_csi_amp(frame, retries=2):
+    last_error = None
+    for attempt in range(retries + 1):
+        try:
+            mat = scio.loadmat(frame)
+            if 'CSIamp' not in mat:
+                raise KeyError(f"CSIamp not found in {frame}")
+            data = mat['CSIamp']
+            if not isinstance(data, np.ndarray):
+                raise TypeError(
+                    f"CSIamp in {frame} is {type(data).__name__}, expected numpy.ndarray")
+            if not np.issubdtype(data.dtype, np.number):
+                raise TypeError(
+                    f"CSIamp in {frame} has dtype {data.dtype}, expected numeric array")
+            if data.ndim != 3 or data.shape[2] < 10:
+                raise ValueError(
+                    f"CSIamp in {frame} has shape {getattr(data, 'shape', None)}, "
+                    "expected [*, *, >=10]")
+            return np.array(data, copy=True)
+        except Exception as exc:
+            last_error = exc
+            if attempt < retries:
+                time.sleep(0.05)
+    raise RuntimeError(
+        f"Failed to load valid CSIamp from {frame} after {retries + 1} attempts"
+    ) from last_error
+
+
+def _normalize_csi_amp(data):
+    data[np.isinf(data)] = np.nan
+    for i in range(10):  # 32
+        temp_col = data[:, :, i]
+        nan_num = np.count_nonzero(temp_col != temp_col)
+        if nan_num != 0:
+            temp_not_nan_col = temp_col[temp_col == temp_col]
+            temp_col[np.isnan(temp_col)] = temp_not_nan_col.mean()
+    return (data - np.min(data)) / (np.max(data) - np.min(data))
 
 
 def decode_config(config):
@@ -85,94 +125,6 @@ def decode_config(config):
     return dataset_config
 
 
-def decode_four_way_config(config):
-    """Decode a four-way split: shared train / teacher val / student val / test."""
-    all_actions = ['A01', 'A02', 'A03', 'A04', 'A05', 'A06', 'A07', 'A08', 'A09', 'A10', 'A11', 'A12', 'A13', 'A14',
-                   'A15', 'A16', 'A17', 'A18', 'A19', 'A20', 'A21', 'A22', 'A23', 'A24', 'A25', 'A26', 'A27']
-    if config['protocol'] == 'protocol1':
-        protocol_actions = ['A02', 'A03', 'A04', 'A05', 'A13', 'A14', 'A17', 'A18', 'A19', 'A20', 'A21', 'A22', 'A23', 'A27']
-    elif config['protocol'] == 'protocol2':
-        protocol_actions = ['A01', 'A06', 'A07', 'A08', 'A09', 'A10', 'A11', 'A12', 'A15', 'A16', 'A24', 'A25', 'A26']
-    else:
-        protocol_actions = all_actions
-
-    def resolve_actions(action_cfg):
-        if action_cfg == 'all':
-            return protocol_actions
-        return action_cfg
-
-    split_cfg = config['four_way_split']
-
-    dataset_config = {
-        'train_dataset': {
-            'modality': config['modality'],
-            'split': 'training',
-            'data_form': {s: resolve_actions(split_cfg['train_dataset']['actions'])
-                          for s in split_cfg['train_dataset']['subjects']}
-        },
-        'teacher_val_dataset': {
-            'modality': config['modality'],
-            'split': 'validation',
-            'data_form': {s: resolve_actions(split_cfg['teacher_val_dataset']['actions'])
-                          for s in split_cfg['teacher_val_dataset']['subjects']}
-        },
-        'student_val_dataset': {
-            'modality': config['modality'],
-            'split': 'validation',
-            'data_form': {s: resolve_actions(split_cfg['student_val_dataset']['actions'])
-                          for s in split_cfg['student_val_dataset']['subjects']}
-        },
-        'test_dataset': {
-            'modality': config['modality'],
-            'split': 'test',
-            'data_form': {s: resolve_actions(split_cfg['test_dataset']['actions'])
-                          for s in split_cfg['test_dataset']['subjects']}
-        },
-    }
-    return dataset_config
-
-
-def decode_teacher_student_config(config):
-    """Decode a no-test teacher-student split: shared train / teacher val / student val."""
-    all_actions = ['A01', 'A02', 'A03', 'A04', 'A05', 'A06', 'A07', 'A08', 'A09', 'A10', 'A11', 'A12', 'A13', 'A14',
-                   'A15', 'A16', 'A17', 'A18', 'A19', 'A20', 'A21', 'A22', 'A23', 'A24', 'A25', 'A26', 'A27']
-    if config['protocol'] == 'protocol1':
-        protocol_actions = ['A02', 'A03', 'A04', 'A05', 'A13', 'A14', 'A17', 'A18', 'A19', 'A20', 'A21', 'A22', 'A23', 'A27']
-    elif config['protocol'] == 'protocol2':
-        protocol_actions = ['A01', 'A06', 'A07', 'A08', 'A09', 'A10', 'A11', 'A12', 'A15', 'A16', 'A24', 'A25', 'A26']
-    else:
-        protocol_actions = all_actions
-
-    def resolve_actions(action_cfg):
-        if action_cfg == 'all':
-            return protocol_actions
-        return action_cfg
-
-    split_cfg = config['teacher_student_split']
-
-    dataset_config = {
-        'train_dataset': {
-            'modality': config['modality'],
-            'split': 'training',
-            'data_form': {s: resolve_actions(split_cfg['train_dataset']['actions'])
-                          for s in split_cfg['train_dataset']['subjects']}
-        },
-        'teacher_val_dataset': {
-            'modality': config['modality'],
-            'split': 'validation',
-            'data_form': {s: resolve_actions(split_cfg['teacher_val_dataset']['actions'])
-                          for s in split_cfg['teacher_val_dataset']['subjects']}
-        },
-        'student_val_dataset': {
-            'modality': config['modality'],
-            'split': 'validation',
-            'data_form': {s: resolve_actions(split_cfg['student_val_dataset']['actions'])
-                          for s in split_cfg['student_val_dataset']['subjects']}
-        },
-    }
-    return dataset_config
-
-
 class MMFi_Database:
     def __init__(self, data_root):
         self.data_root = data_root
@@ -183,41 +135,20 @@ class MMFi_Database:
         self.load_database()
 
     def load_database(self):
-        # # for scene in sorted(os.listdir(self.data_root)):
-        # #     if scene.startswith("."):
-        # #         continue
-        # #     self.scenes[scene] = {}
-        # for scene in sorted(os.listdir(self.data_root)):
-        #     scene_path = os.path.join(self.data_root, scene)
-        #     if not os.path.isdir(scene_path):  # ←←← 只加这一行！
-        #         continue
-        #     self.scenes[scene] = {}
-        #     for subject in sorted(os.listdir(os.path.join(self.data_root, scene))):
-        #         if subject.startswith("."):
-        #             continue
-        #         self.scenes[scene][subject] = {}
-        #         self.subjects[subject] = {}
-        #         for action in sorted(os.listdir(os.path.join(self.data_root, scene, subject))):
-        #             if action.startswith("."):
-        #                 continue
-        # for scene in sorted(os.listdir(self.data_root)):
-        #     if scene.startswith("."):
-        #         continue
-        #     self.scenes[scene] = {}
         for scene in sorted(os.listdir(self.data_root)):
             scene_path = os.path.join(self.data_root, scene)
-            if not os.path.isdir(scene_path):  # 第一层：跳过非目录
+            if not os.path.isdir(scene_path):
                 continue
             self.scenes[scene] = {}
             for subject in sorted(os.listdir(scene_path)):
                 subject_path = os.path.join(scene_path, subject)
-                if not os.path.isdir(subject_path):  # 第二层：跳过非目录
+                if not os.path.isdir(subject_path):
                     continue
                 self.scenes[scene][subject] = {}
                 self.subjects[subject] = {}
                 for action in sorted(os.listdir(subject_path)):
                     action_path = os.path.join(subject_path, action)
-                    if not os.path.isdir(action_path):  # 第三层：跳过非目录
+                    if not os.path.isdir(action_path):
                         continue
                     self.scenes[scene][subject][action] = {}
                     self.subjects[subject][action] = {}
@@ -349,15 +280,7 @@ class MMFi_Dataset(Dataset):
                 data.append(data_tmp)
         elif mod == 'wifi-csi':
             for csi_mat in sorted(glob.glob(os.path.join(dir, "frame*.mat"))):
-                data_mat = scio.loadmat(csi_mat)['CSIamp']
-                data_mat[np.isinf(data_mat)] = np.nan
-                for i in range(10):  # 32
-                    temp_col = data_mat[:, :, i]
-                    nan_num = np.count_nonzero(temp_col != temp_col)
-                    if nan_num != 0:
-                        temp_not_nan_col = temp_col[temp_col == temp_col]
-                        temp_col[np.isnan(temp_col)] = temp_not_nan_col.mean()
-                data_mat = (data_mat - np.min(data_mat)) / (np.max(data_mat) - np.min(data_mat))
+                data_mat = _normalize_csi_amp(_read_csi_amp(csi_mat))
                 data_frame = np.array(data_mat)
                 data.append(data_frame)
             data = np.array(data)
@@ -386,25 +309,7 @@ class MMFi_Dataset(Dataset):
                 data = data.copy().reshape(-1, 5)
                 # data = data[:, :3]
         elif mod == 'wifi-csi':
-            mat = scio.loadmat(frame)
-            if 'CSIamp' not in mat:
-                raise KeyError(f"CSIamp not found in {frame}")
-            data = mat['CSIamp']
-            if not isinstance(data, np.ndarray):
-                raise TypeError(
-                    f"CSIamp in {frame} is {type(data).__name__}, expected numpy.ndarray")
-            if data.ndim != 3 or data.shape[2] < 10:
-                raise ValueError(
-                    f"CSIamp in {frame} has shape {getattr(data, 'shape', None)}, "
-                    "expected [*, *, >=10]")
-            data[np.isinf(data)] = np.nan
-            for i in range(10):  # 32
-                temp_col = data[:, :, i]
-                nan_num = np.count_nonzero(temp_col != temp_col)
-                if nan_num != 0:
-                    temp_not_nan_col = temp_col[temp_col == temp_col]
-                    temp_col[np.isnan(temp_col)] = temp_not_nan_col.mean()
-            data = (data - np.min(data)) / (np.max(data) - np.min(data))
+            data = _normalize_csi_amp(_read_csi_amp(frame))
         else:
             raise ValueError('Found unseen modality in this dataset.')
         return data
@@ -458,29 +363,6 @@ def make_dataset(dataset_root, config):
     train_dataset = MMFi_Dataset(database, config['data_unit'], **config_dataset['train_dataset'])
     val_dataset = MMFi_Dataset(database, config['data_unit'], **config_dataset['val_dataset'])
     return train_dataset, val_dataset
-
-
-def make_four_way_dataset(dataset_root, config):
-    database = MMFi_Database(dataset_root)
-    config_dataset = decode_four_way_config(config)
-    train_dataset = MMFi_Dataset(database, config['data_unit'], **config_dataset['train_dataset'])
-    teacher_val_dataset = MMFi_Dataset(
-        database, config['data_unit'], **config_dataset['teacher_val_dataset'])
-    student_val_dataset = MMFi_Dataset(
-        database, config['data_unit'], **config_dataset['student_val_dataset'])
-    test_dataset = MMFi_Dataset(database, config['data_unit'], **config_dataset['test_dataset'])
-    return train_dataset, teacher_val_dataset, student_val_dataset, test_dataset
-
-
-def make_teacher_student_dataset(dataset_root, config):
-    database = MMFi_Database(dataset_root)
-    config_dataset = decode_teacher_student_config(config)
-    train_dataset = MMFi_Dataset(database, config['data_unit'], **config_dataset['train_dataset'])
-    teacher_val_dataset = MMFi_Dataset(
-        database, config['data_unit'], **config_dataset['teacher_val_dataset'])
-    student_val_dataset = MMFi_Dataset(
-        database, config['data_unit'], **config_dataset['student_val_dataset'])
-    return train_dataset, teacher_val_dataset, student_val_dataset
 
 
 def collate_fn_padd(batch):

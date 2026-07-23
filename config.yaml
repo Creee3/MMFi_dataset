@@ -317,6 +317,13 @@ manual_split:
     - A27
 split_to_use: random_split
 init_rand_seed: 0
+heldout_split:
+  # false = MMFi original protocol: use the full held-out validation split.
+  # true  = split the held-out partition into validation/test, e.g. HPE-Li style.
+  enabled: false
+  # HPE-Li reference: split the MMFi held-out partition into validation/test.
+  test_size: 0.5
+  random_seed: 41
 train_loader:
   batch_size: 32
 validation_loader:

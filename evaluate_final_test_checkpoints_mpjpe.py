@@ -1,7 +1,7 @@
 """
 Compare final-test metrics for multiple checkpoints from the same run.
 
-This is a lightweight diagnostic for strict four-way experiments. It evaluates
+This is a lightweight diagnostic for experiments with an independent test set. It evaluates
 existing checkpoints such as best.pth, topk_soup.pth, tail_soup.pth,
 best_swa.pth, and last.pth on the same final test loader, then writes a sidecar
 JSON without overwriting final_test.json.
@@ -42,7 +42,7 @@ def evaluate_checkpoint(ckpt_path, model_type, train_args, test_loader, device):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Compare strict four-way final-test metrics across checkpoints."
+        description="Compare final-test metrics across checkpoints."
     )
     parser.add_argument("dataset_root")
     parser.add_argument("config_file")

@@ -1,5 +1,5 @@
 """
-Evaluate an existing MPJPE checkpoint on the strict four-way test split.
+Evaluate an existing MPJPE checkpoint on the configured evaluation split.
 
 This is useful when training finished successfully but Windows failed during
 the final test DataLoader stage because of multiprocessing / page-file limits.
@@ -79,7 +79,7 @@ def build_model(model_type: str, args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Evaluate an existing best.pth on strict four-way test."
+        description="Evaluate an existing best.pth on the configured evaluation split."
     )
     parser.add_argument("dataset_root")
     parser.add_argument("config_file")
@@ -102,6 +102,7 @@ def main():
 
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     cfg = load_config(args.config_file, args.split)
+    heldout_cfg = cfg.get("heldout_split", {})
     test_ds, test_loader = get_test_loader(
         args.dataset_root,
         cfg,
@@ -114,6 +115,14 @@ def main():
     print(f"Run dir: {args.run_dir}")
     print(f"Model type: {args.model_type}")
     print(f"Checkpoint: {args.checkpoint}")
+    print(f"Protocol: {cfg.get('protocol', 'unknown_protocol')}")
+    print("Held-out split: "
+          f"enabled={heldout_cfg.get('enabled', False)} | "
+          f"unit={heldout_cfg.get('unit', 'window')} | "
+          f"test_size={heldout_cfg.get('test_size', 0.5)} | "
+          f"seed={heldout_cfg.get('random_seed', 41)}")
+    if not heldout_cfg.get("enabled", False):
+        print("Evaluation set: MMFi original held-out validation/eval split.")
     print(f"Test samples (windowed): {len(test_ds)}")
     print(f"Window: {train_args.window}, Stride: {train_args.stride}")
     print(f"CBAM: {train_args.use_cbam}, Dropout: {train_args.dropout}")

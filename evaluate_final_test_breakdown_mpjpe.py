@@ -1,5 +1,5 @@
 """
-Evaluate a strict four-way checkpoint and break final-test errors down by group.
+Evaluate a checkpoint and break final-test errors down by group.
 
 This script is meant for diagnosing validation-to-test generalization gaps. It
 reports overall MPJPE / PA-MPJPE / PCK and per-subject, per-scene, and
@@ -86,7 +86,7 @@ def print_worst(title, rows, limit):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Strict four-way final-test MPJPE breakdown."
+        description="Final-test MPJPE breakdown."
     )
     parser.add_argument("dataset_root")
     parser.add_argument("config_file")

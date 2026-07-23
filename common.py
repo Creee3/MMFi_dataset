@@ -19,9 +19,9 @@ import torch.nn.functional as F
 import yaml
 
 from mmfi_lib.mmfi import (
+    MMFi_Database,
+    MMFi_Dataset,
     make_dataset,
-    make_four_way_dataset,
-    make_teacher_student_dataset,
     make_dataloader,
 )
 from mmfi_lib.evaluate import calulate_error
@@ -35,7 +35,7 @@ random.seed(seed)
 
 # ----------------------------- Pose Normalization -----------------------------
 def normalize_pose2d(pose2d):
-    root = (pose2d[:, 11:12, :] + pose2d[:, 12:13, :]) / 2
+    root = (pose2d[..., 11:12, :] + pose2d[..., 12:13, :]) / 2
     return pose2d - root
 
 
@@ -192,11 +192,13 @@ def fmt_metrics(mpjpe, pa, pck):
 # ----------------------------- Temporal Window Dataset Wrapper -----------------------------
 class TemporalWindowWrapper(torch.utils.data.Dataset):
     def __init__(self, base_ds, window: int = 16, stride: int = 1,
-                 require_modalities: Optional[List[str]] = None):
+                 require_modalities: Optional[List[str]] = None,
+                 include_rgb_window: bool = False):
         self.base_ds = base_ds
         self.window  = int(window)
         self.stride  = int(stride)
         self.require_modalities = require_modalities
+        self.include_rgb_window = bool(include_rgb_window)
         self.indices = []
 
         for i in range(len(base_ds)):
@@ -234,6 +236,7 @@ class TemporalWindowWrapper(torch.utils.data.Dataset):
         idx_cur       = item["idx"]
 
         wifi_frames = []
+        rgb_frames = []
         for t in range(self.window):
             idx_t  = idx_cur - (self.window - 1 - t) * self.stride
             path_t = self._build_frame_path(wifi_path_cur, idx_t)
@@ -241,11 +244,150 @@ class TemporalWindowWrapper(torch.utils.data.Dataset):
                 raise FileNotFoundError(path_t)
             wifi_t = self.base_ds.read_frame(path_t)
             wifi_frames.append(np.array(wifi_t))
+            if self.include_rgb_window:
+                rgb_path_cur = item.get("rgb_path")
+                if rgb_path_cur is None:
+                    raise ValueError("include_rgb_window=True requires rgb modality.")
+                rgb_path_t = self._build_frame_path(rgb_path_cur, idx_t)
+                if not os.path.isfile(rgb_path_t):
+                    raise FileNotFoundError(rgb_path_t)
+                rgb_t = self.base_ds.read_frame(rgb_path_t)
+                rgb_frames.append(np.array(rgb_t))
 
         wifi_arr = np.stack(wifi_frames, axis=0)
         sample["input_wifi-csi_window"] = torch.FloatTensor(wifi_arr)
+        if self.include_rgb_window:
+            sample["input_rgb_window"] = torch.FloatTensor(np.stack(rgb_frames, axis=0))
         sample["idx_window_end"]        = idx_cur
         return sample
+
+
+def split_heldout_windows(heldout_ds, cfg):
+    """Split the held-out window dataset into validation/test subsets.
+
+    This follows the HPE-Li reference protocol: MMFi's original validation
+    partition is treated as a held-out pool, then split 1:1 by default.
+    Set heldout_split.unit="sequence" to keep all windows from the same
+    subject-action sequence on the same side of the split.
+    """
+    split_cfg = cfg.get("heldout_split", {})
+    unit = str(split_cfg.get("unit", "window")).lower()
+    test_size = float(split_cfg.get("test_size", 0.5))
+    random_seed = int(split_cfg.get("random_seed", 41))
+
+    if not 0.0 < test_size < 1.0:
+        raise ValueError("heldout_split.test_size must be between 0 and 1.")
+    if len(heldout_ds) < 2:
+        raise ValueError("Need at least two held-out samples to split validation/test.")
+
+    rng = np.random.default_rng(random_seed)
+
+    if unit in ("window", "sample"):
+        indices = np.arange(len(heldout_ds))
+        rng.shuffle(indices)
+    elif unit in ("sequence", "subject_action"):
+        groups = {}
+        for window_j, base_i in enumerate(heldout_ds.indices):
+            item = heldout_ds.base_ds.data_list[base_i]
+            key = (item.get("scene"), item.get("subject"), item.get("action"))
+            groups.setdefault(key, []).append(window_j)
+        if len(groups) < 2:
+            raise ValueError("Need at least two held-out sequences to split validation/test.")
+        group_keys = np.array(list(groups.keys()), dtype=object)
+        rng.shuffle(group_keys)
+
+        n_test_groups = int(math.ceil(len(group_keys) * test_size))
+        n_test_groups = min(max(n_test_groups, 1), len(group_keys) - 1)
+        test_keys = set(map(tuple, group_keys[:n_test_groups].tolist()))
+        test_indices = []
+        val_indices = []
+        for key, group_indices in groups.items():
+            if key in test_keys:
+                test_indices.extend(group_indices)
+            else:
+                val_indices.extend(group_indices)
+        return (
+            torch.utils.data.Subset(heldout_ds, sorted(val_indices)),
+            torch.utils.data.Subset(heldout_ds, sorted(test_indices)),
+        )
+    elif unit == "subject":
+        groups = {}
+        for window_j, base_i in enumerate(heldout_ds.indices):
+            item = heldout_ds.base_ds.data_list[base_i]
+            key = item.get("subject")
+            groups.setdefault(key, []).append(window_j)
+        if len(groups) < 2:
+            raise ValueError("Need at least two held-out subjects to split validation/test.")
+        group_keys = np.array(list(groups.keys()), dtype=object)
+        rng.shuffle(group_keys)
+
+        n_test_groups = int(math.ceil(len(group_keys) * test_size))
+        n_test_groups = min(max(n_test_groups, 1), len(group_keys) - 1)
+        test_keys = set(group_keys[:n_test_groups].tolist())
+        test_indices = []
+        val_indices = []
+        for key, group_indices in groups.items():
+            if key in test_keys:
+                test_indices.extend(group_indices)
+            else:
+                val_indices.extend(group_indices)
+        return (
+            torch.utils.data.Subset(heldout_ds, sorted(val_indices)),
+            torch.utils.data.Subset(heldout_ds, sorted(test_indices)),
+        )
+    else:
+        raise ValueError(
+            "heldout_split.unit must be one of: window, sequence, subject.")
+
+    n_test = int(math.ceil(len(indices) * test_size))
+    n_test = min(max(n_test, 1), len(indices) - 1)
+    test_indices = indices[:n_test].tolist()
+    val_indices = indices[n_test:].tolist()
+
+    val_ds = torch.utils.data.Subset(heldout_ds, val_indices)
+    test_ds = torch.utils.data.Subset(heldout_ds, test_indices)
+    return val_ds, test_ds
+
+
+def heldout_split_enabled(cfg):
+    return bool(cfg.get("heldout_split", {}).get("enabled", False))
+
+
+def get_cross_subject_val_test_subjects(cfg):
+    split_cfg = cfg.get("cross_subject_split", {})
+    heldout_subjects = list(split_cfg.get("val_dataset", {}).get("subjects") or [])
+    heldout_cfg = cfg.get("heldout_split", {})
+    val_subjects = list(heldout_cfg.get("val_subjects") or [])
+    test_subjects = list(heldout_cfg.get("test_subjects") or [])
+
+    if not val_subjects or not test_subjects:
+        raise ValueError(
+            "cross_subject_split with heldout_split.unit='subject' requires "
+            "heldout_split.val_subjects and heldout_split.test_subjects.")
+
+    overlap = sorted(set(val_subjects) & set(test_subjects))
+    if overlap:
+        raise ValueError(f"Val/test subjects overlap: {overlap}")
+
+    missing = sorted((set(val_subjects) | set(test_subjects)) - set(heldout_subjects))
+    if missing:
+        raise ValueError(
+            f"Val/test subjects must be drawn from cross_subject_split.val_dataset.subjects. "
+            f"Unexpected subjects: {missing}")
+
+    unused = sorted(set(heldout_subjects) - (set(val_subjects) | set(test_subjects)))
+    if unused:
+        raise ValueError(f"Held-out subjects not assigned to val/test: {unused}")
+
+    return val_subjects, test_subjects
+
+
+def make_cross_subject_heldout_dataset(dataset_root, cfg, subjects):
+    cfg_subject = copy.deepcopy(cfg)
+    cfg_subject["split_to_use"] = "cross_subject_split"
+    cfg_subject["cross_subject_split"]["val_dataset"]["subjects"] = list(subjects)
+    _, heldout_ds_base = make_dataset(dataset_root, cfg_subject)
+    return heldout_ds_base
 
 
 def collate_temporal(batch):
@@ -260,6 +402,8 @@ def collate_temporal(batch):
     out["input_wifi-csi_window"] = torch.stack([b["input_wifi-csi_window"] for b in batch], dim=0)
     if "input_rgb" in batch[0]:
         out["input_rgb"] = torch.stack([torch.as_tensor(b["input_rgb"]).float() for b in batch], dim=0)
+    if "input_rgb_window" in batch[0]:
+        out["input_rgb_window"] = torch.stack([b["input_rgb_window"] for b in batch], dim=0)
     return out
 
 
@@ -414,6 +558,32 @@ class EnhancedRGBEncoder(nn.Module):
         return self.fc(self.transformer(x).flatten(1))
 
 
+class TemporalRGBEncoder(nn.Module):
+    def __init__(self, d_model=512, window=16, dropout=0.1,
+                 num_layers=2, dim_feedforward=1024):
+        super().__init__()
+        self.frame_encoder = EnhancedRGBEncoder(d_model, dropout)
+        self.temporal_pe = PositionalEncoding(d_model, max_len=window + 16)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model, nhead=8, dim_feedforward=dim_feedforward,
+            dropout=dropout, batch_first=True, activation='gelu')
+        self.temporal_transformer = nn.TransformerEncoder(
+            encoder_layer, num_layers=num_layers)
+        self.temporal_pool = nn.Sequential(
+            nn.Linear(d_model, d_model), nn.LayerNorm(d_model))
+
+    def forward(self, rgb_window):
+        if rgb_window.dim() == 3:
+            return self.frame_encoder(rgb_window)
+        B, T = rgb_window.shape[:2]
+        frame_feats = self.frame_encoder(
+            rgb_window.reshape(B * T, *rgb_window.shape[2:])
+        ).view(B, T, -1)
+        frame_feats = self.temporal_pe(frame_feats)
+        return self.temporal_pool(
+            self.temporal_transformer(frame_feats)[:, -1, :])
+
+
 # ----------------------------- Pose Head -----------------------------
 class PoseHead(nn.Module):
     def __init__(self, d_model=512, dropout=0.1, hidden=512):
@@ -542,9 +712,17 @@ class EnhancedFusionTeacher(nn.Module):
 #new_thing
 class RGBOnlyTeacher(nn.Module):
     """纯 RGB Teacher：接口尽量与 EnhancedFusionTeacher 保持一致。"""
-    def __init__(self, d_model=512, dropout=0.1):
+    def __init__(self, d_model=512, dropout=0.1, temporal_rgb=False,
+                 window=16, temporal_layers=2, dim_feedforward=1024):
         super().__init__()
-        self.rgb_encoder = EnhancedRGBEncoder(d_model, dropout)
+        self.temporal_rgb = bool(temporal_rgb)
+        if self.temporal_rgb:
+            self.rgb_encoder = TemporalRGBEncoder(
+                d_model=d_model, window=window, dropout=dropout,
+                num_layers=temporal_layers,
+                dim_feedforward=dim_feedforward)
+        else:
+            self.rgb_encoder = EnhancedRGBEncoder(d_model, dropout)
         self.pose_head = PoseHead(d_model, dropout)
 
     def forward(self, wifi, rgb, return_feat=False):
@@ -627,7 +805,10 @@ def eval_teacher_model(model, val_loader, device, use_root_relative=False):
         for batch in val_loader:
             wifi_window = batch["input_wifi-csi_window"].to(device)
             wifi_cur    = wifi_window[:, -1, :, :, :]
-            rgb         = batch["input_rgb"].to(device)
+            if getattr(model, "temporal_rgb", False) and "input_rgb_window" in batch:
+                rgb = batch["input_rgb_window"].to(device)
+            else:
+                rgb = batch["input_rgb"].to(device)
             gt          = batch["output"].to(device)
             #if use_root_relative:
             #    rgb = normalize_pose2d(rgb)
@@ -659,50 +840,203 @@ def eval_teacher_model(model, val_loader, device, use_root_relative=False):
 
 
 # ----------------------------- 数据加载工具 -----------------------------
+def _protocol_actions(config):
+    all_actions = [
+        'A01', 'A02', 'A03', 'A04', 'A05', 'A06', 'A07', 'A08', 'A09',
+        'A10', 'A11', 'A12', 'A13', 'A14', 'A15', 'A16', 'A17', 'A18',
+        'A19', 'A20', 'A21', 'A22', 'A23', 'A24', 'A25', 'A26', 'A27']
+    if config['protocol'] == 'protocol1':
+        return [
+            'A02', 'A03', 'A04', 'A05', 'A13', 'A14', 'A17', 'A18',
+            'A19', 'A20', 'A21', 'A22', 'A23', 'A27']
+    if config['protocol'] == 'protocol2':
+        return [
+            'A01', 'A06', 'A07', 'A08', 'A09', 'A10', 'A11', 'A12',
+            'A15', 'A16', 'A24', 'A25', 'A26']
+    return all_actions
+
+
+def _resolve_actions(action_cfg, protocol_actions):
+    return protocol_actions if action_cfg == 'all' else action_cfg
+
+
+def _split_dataset_config(config, split_name, dataset_names):
+    protocol_actions = _protocol_actions(config)
+    split_cfg = config[split_name]
+    result = {}
+    for dataset_name in dataset_names:
+        entry = split_cfg[dataset_name]
+        actions = _resolve_actions(entry['actions'], protocol_actions)
+        default_split = 'training' if dataset_name == 'train_dataset' else 'validation'
+        if dataset_name == 'test_dataset':
+            default_split = 'test'
+        result[dataset_name] = {
+            'modality': config['modality'],
+            'split': entry.get('split', default_split),
+            'data_form': {subject: actions for subject in entry['subjects']},
+        }
+    return result
+
+
+def make_four_way_dataset(dataset_root, config):
+    database = MMFi_Database(dataset_root)
+    config_dataset = _split_dataset_config(
+        config,
+        'four_way_split',
+        ('train_dataset', 'teacher_val_dataset', 'student_val_dataset', 'test_dataset'),
+    )
+    train_dataset = MMFi_Dataset(
+        database, config['data_unit'], **config_dataset['train_dataset'])
+    teacher_val_dataset = MMFi_Dataset(
+        database, config['data_unit'], **config_dataset['teacher_val_dataset'])
+    student_val_dataset = MMFi_Dataset(
+        database, config['data_unit'], **config_dataset['student_val_dataset'])
+    test_dataset = MMFi_Dataset(
+        database, config['data_unit'], **config_dataset['test_dataset'])
+    return train_dataset, teacher_val_dataset, student_val_dataset, test_dataset
+
+
+def make_teacher_student_dataset(dataset_root, config):
+    database = MMFi_Database(dataset_root)
+    config_dataset = _split_dataset_config(
+        config,
+        'teacher_student_split',
+        ('train_dataset', 'teacher_val_dataset', 'student_val_dataset'),
+    )
+    train_dataset = MMFi_Dataset(
+        database, config['data_unit'], **config_dataset['train_dataset'])
+    teacher_val_dataset = MMFi_Dataset(
+        database, config['data_unit'], **config_dataset['teacher_val_dataset'])
+    student_val_dataset = MMFi_Dataset(
+        database, config['data_unit'], **config_dataset['student_val_dataset'])
+    return train_dataset, teacher_val_dataset, student_val_dataset
+
+
 def load_config(config_file, split):
     with open(config_file, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     cfg = copy.deepcopy(cfg)
+    env_protocol = os.environ.get("MMFI_PROTOCOL")
+    if env_protocol:
+        if env_protocol not in ("protocol1", "protocol2", "protocol3"):
+            raise ValueError(
+                "MMFI_PROTOCOL must be one of: protocol1, protocol2, protocol3")
+        cfg["protocol"] = env_protocol
     cfg["data_unit"]    = "frame"
     cfg["split_to_use"] = split
     cfg["modality"]     = "wifi-csi|rgb"
+    env_teacher_train = os.environ.get("TEACHER_CV_TRAIN_SUBJECTS")
+    env_teacher_val = os.environ.get("TEACHER_CV_VAL_SUBJECTS")
+    if split == "teacher_student_split" and (env_teacher_train or env_teacher_val):
+        split_cfg = cfg.setdefault("teacher_student_split", {})
+        if env_teacher_train:
+            split_cfg.setdefault("train_dataset", {})["subjects"] = [
+                s.strip() for s in env_teacher_train.split(",") if s.strip()]
+        if env_teacher_val:
+            split_cfg.setdefault("teacher_val_dataset", {})["subjects"] = [
+                s.strip() for s in env_teacher_val.split(",") if s.strip()]
+    heldout_cfg = cfg.setdefault("heldout_split", {})
+    env_enabled = os.environ.get("HELDOUT_SPLIT_ENABLED")
+    if env_enabled is not None:
+        heldout_cfg["enabled"] = env_enabled.strip().lower() in (
+            "1", "true", "yes", "y", "on")
+    env_unit = os.environ.get("HELDOUT_SPLIT_UNIT")
+    if env_unit:
+        heldout_cfg["unit"] = env_unit
+        if env_unit.strip().lower() == "subject":
+            heldout_cfg["enabled"] = True
+    env_test_size = os.environ.get("HELDOUT_SPLIT_TEST_SIZE")
+    if env_test_size:
+        heldout_cfg["test_size"] = float(env_test_size)
+    env_seed = os.environ.get("HELDOUT_SPLIT_SEED")
+    if env_seed:
+        heldout_cfg["random_seed"] = int(env_seed)
+    env_val_subjects = os.environ.get("HELDOUT_VAL_SUBJECTS")
+    if env_val_subjects:
+        heldout_cfg["val_subjects"] = [
+            s.strip() for s in env_val_subjects.split(",") if s.strip()]
+    env_test_subjects = os.environ.get("HELDOUT_TEST_SUBJECTS")
+    if env_test_subjects:
+        heldout_cfg["test_subjects"] = [
+            s.strip() for s in env_test_subjects.split(",") if s.strip()]
     return cfg
 
 
 def get_loaders(dataset_root, cfg, window, stride, batch_size, val_batch_size,
-                role="student", num_workers=8):
+                role="student", num_workers=8, include_rgb_window=False,
+                eval_num_workers=None):
+    split_enabled = heldout_split_enabled(cfg)
     if cfg.get("split_to_use") == "four_way_split":
         train_ds_base, teacher_val_ds_base, student_val_ds_base, _ = make_four_way_dataset(dataset_root, cfg)
         val_ds_base = teacher_val_ds_base if role == "teacher" else student_val_ds_base
+        split_heldout = False
     elif cfg.get("split_to_use") == "teacher_student_split":
         train_ds_base, teacher_val_ds_base, student_val_ds_base = make_teacher_student_dataset(dataset_root, cfg)
         val_ds_base = teacher_val_ds_base if role == "teacher" else student_val_ds_base
+        split_heldout = False
+    elif (cfg.get("split_to_use") == "cross_subject_split"
+          and cfg.get("heldout_split", {}).get("unit") == "subject"):
+        train_ds_base, _ = make_dataset(dataset_root, cfg)
+        val_subjects, _ = get_cross_subject_val_test_subjects(cfg)
+        val_ds_base = make_cross_subject_heldout_dataset(
+            dataset_root, cfg, val_subjects)
+        split_heldout = False
     else:
         train_ds_base, val_ds_base = make_dataset(dataset_root, cfg)
+        split_heldout = split_enabled
     train_ds = TemporalWindowWrapper(
         train_ds_base, window=window, stride=stride,
-        require_modalities=["wifi-csi"])
-    val_ds = TemporalWindowWrapper(
+        require_modalities=["wifi-csi"],
+        include_rgb_window=include_rgb_window)
+    heldout_ds = TemporalWindowWrapper(
         val_ds_base, window=window, stride=stride,
-        require_modalities=["wifi-csi"])
+        require_modalities=["wifi-csi"],
+        include_rgb_window=include_rgb_window)
+    if split_heldout:
+        val_ds, _ = split_heldout_windows(heldout_ds, cfg)
+    else:
+        val_ds = heldout_ds
     rng = torch.manual_seed(cfg.get("init_rand_seed", 0))
+    val_workers = num_workers if eval_num_workers is None else eval_num_workers
     train_loader = make_dataloader(
         train_ds, True, rng, batch_size=batch_size,
         collate_fn_padd=collate_temporal, num_workers=num_workers)
     val_loader = make_dataloader(
         val_ds, False, rng, batch_size=val_batch_size,
-        collate_fn_padd=collate_temporal, num_workers=num_workers)
+        collate_fn_padd=collate_temporal, num_workers=val_workers)
     return train_ds, val_ds, train_loader, val_loader
 
 
-def get_test_loader(dataset_root, cfg, window, stride, batch_size, num_workers=8):
-    if cfg.get("split_to_use") != "four_way_split":
-        raise ValueError("get_test_loader is only available when split_to_use == 'four_way_split'")
-
-    _, _, _, test_ds_base = make_four_way_dataset(dataset_root, cfg)
-    test_ds = TemporalWindowWrapper(
-        test_ds_base, window=window, stride=stride,
-        require_modalities=["wifi-csi"])
+def get_test_loader(dataset_root, cfg, window, stride, batch_size, num_workers=8,
+                    include_rgb_window=False):
+    split_enabled = heldout_split_enabled(cfg)
+    if cfg.get("split_to_use") == "four_way_split":
+        _, _, _, test_ds_base = make_four_way_dataset(dataset_root, cfg)
+        test_ds = TemporalWindowWrapper(
+            test_ds_base, window=window, stride=stride,
+            require_modalities=["wifi-csi"],
+            include_rgb_window=include_rgb_window)
+    elif cfg.get("split_to_use") == "teacher_student_split":
+        raise ValueError("teacher_student_split has no independent test set.")
+    elif (cfg.get("split_to_use") == "cross_subject_split"
+          and cfg.get("heldout_split", {}).get("unit") == "subject"):
+        _, test_subjects = get_cross_subject_val_test_subjects(cfg)
+        test_ds_base = make_cross_subject_heldout_dataset(
+            dataset_root, cfg, test_subjects)
+        test_ds = TemporalWindowWrapper(
+            test_ds_base, window=window, stride=stride,
+            require_modalities=["wifi-csi"],
+            include_rgb_window=include_rgb_window)
+    else:
+        _, heldout_ds_base = make_dataset(dataset_root, cfg)
+        heldout_ds = TemporalWindowWrapper(
+            heldout_ds_base, window=window, stride=stride,
+            require_modalities=["wifi-csi"],
+            include_rgb_window=include_rgb_window)
+        if split_enabled:
+            _, test_ds = split_heldout_windows(heldout_ds, cfg)
+        else:
+            test_ds = heldout_ds
     rng = torch.manual_seed(cfg.get("init_rand_seed", 0))
     test_loader = make_dataloader(
         test_ds, False, rng, batch_size=batch_size,
@@ -727,6 +1061,8 @@ def add_common_args(parser):
     parser.add_argument("--device",         default="cuda")
     parser.add_argument("--lr_patience",    type=int,   default=3)
     parser.add_argument("--num_workers",    type=int,   default=8)
+    parser.add_argument("--eval_num_workers", type=int, default=None,
+                        help="Validation/test DataLoader workers; defaults to --num_workers")
 
     # Model
     parser.add_argument("--d_model",  type=int,   default=512)
