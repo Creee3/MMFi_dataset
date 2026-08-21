@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "reference": "rerun_archives/dtpose_823_20260815/remote_snapshot/pretrain.py",
+  "scope": "Equal-sample DT-Pose pretraining entry and configuration",
+  "files": {
+    "cloud_rerun/run_dtpose_equal_samples_pretrain.py": {
+      "sha256": "54cf9f9f6c8bc38c0069357ca1be3edc9f75bd37382fce4ab8022e299d09d9fd",
+      "bytes": 27567
+    },
+    "pretrain.py": {
+      "sha256": "60dbe05074ac7d213e4c50826956bc22b7d82243dcbf4bb830d8dffe04886e34",
+      "bytes": 10379
+    },
+    "config/mmfi/pretrain_config.yaml": {
+      "sha256": "691e7b799cd9d0ccef68a7124c7f632011e94ca57569654b30d9c9017a2f5bca",
+      "bytes": 2955
+    },
+    "cloud_rerun/pretrain_equal_samples_entry.py": {
+      "sha256": "b2dd4ae5f74b325a6cac443578fdd4767e4c50244752987fb371296fcd3f37f7",
+      "bytes": 1610
+    }
+  }
+}

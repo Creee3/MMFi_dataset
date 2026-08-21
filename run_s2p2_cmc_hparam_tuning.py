@@ -238,6 +238,7 @@ def run_command(
     process_log_path,
     attempt_log_path=None,
     no_output_timeout=0,
+    env=None,
 ):
     log_paths = [process_log_path]
     if attempt_log_path is not None:
@@ -246,7 +247,7 @@ def run_command(
     try:
         proc = subprocess.Popen(
             command,
-            env=training_env(seed),
+            env=env if env is not None else training_env(seed),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             bufsize=1,

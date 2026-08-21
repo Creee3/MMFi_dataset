@@ -1,0 +1,6 @@
+# Preserve byte-identical files covered by the source-integrity manifests.
+s2p2_equal_samples_mpjpe_code_20260820/** -text
+
+# Keep Windows launchers in their tested on-cloud representation.
+cloud_5090_launchers_20260821/launchers/*.cmd -text
+*.bat -text

@@ -1,6 +1,8 @@
 import os
 import sys
 import argparse
+import json
+import random
 from datetime import datetime
 
 import numpy as np
@@ -14,6 +16,41 @@ from common import (
     root_relative_pose_loss, root_position_loss, bone_length_loss,
     load_config, get_loaders, get_test_loader
 )
+
+
+def load_trusted_checkpoint(path):
+    try:
+        return torch.load(path, map_location="cpu", weights_only=False)
+    except TypeError:
+        return torch.load(path, map_location="cpu")
+
+
+def checkpoint_rng_state():
+    state = {
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch": torch.get_rng_state(),
+    }
+    if torch.cuda.is_available():
+        state["cuda"] = torch.cuda.get_rng_state_all()
+    return state
+
+
+def restore_rng_state(state):
+    if not isinstance(state, dict):
+        return False
+    try:
+        if "python" in state:
+            random.setstate(state["python"])
+        if "numpy" in state:
+            np.random.set_state(state["numpy"])
+        if "torch" in state:
+            torch.set_rng_state(state["torch"])
+        if "cuda" in state and torch.cuda.is_available():
+            torch.cuda.set_rng_state_all(state["cuda"])
+    except (TypeError, ValueError, RuntimeError):
+        return False
+    return True
 
 
 def dropout_rgb_history(rgb_window, drop_prob):
@@ -82,8 +119,36 @@ def train_t1_rgb_teacher_mpjpe(args, train_loader, val_loader, device):
     history = []
     best_metric = 1e9
     no_improve = 0
+    start_epoch = 1
 
-    for ep in range(1, args.epochs + 1):
+    if args.resume_last and os.path.isfile(last_path):
+        ckpt = load_trusted_checkpoint(last_path)
+        model.load_state_dict(ckpt["model"], strict=True)
+        if "optimizer" in ckpt:
+            opt.load_state_dict(ckpt["optimizer"])
+        if "scheduler" in ckpt:
+            scheduler.load_state_dict(ckpt["scheduler"])
+        history = ckpt.get("history", [])
+        if not history and os.path.isfile(hist_path):
+            try:
+                with open(hist_path, "r", encoding="utf-8") as f:
+                    history = json.load(f)
+            except (OSError, ValueError):
+                history = []
+        best_metric = float(ckpt.get(
+            "best_metric",
+            min((row.get("mpjpe", 1e9) for row in history), default=1e9),
+        ))
+        no_improve = int(ckpt.get("no_improve", 0))
+        saved_epoch = int(ckpt.get(
+            "epoch", history[-1].get("epoch", 0) if history else 0))
+        start_epoch = saved_epoch + 1
+        restored_rng = restore_rng_state(ckpt.get("rng_state"))
+        print(f"Resuming from last.pth at epoch {start_epoch}/{args.epochs}")
+        if not restored_rng:
+            print("Resume checkpoint has no RNG state; continuing from saved model state.")
+
+    for ep in range(start_epoch, args.epochs + 1):
         model.train()
         running = 0.0
         running_pose = running_rel = running_root = running_bone = 0.0
@@ -173,8 +238,7 @@ def train_t1_rgb_teacher_mpjpe(args, train_loader, val_loader, device):
             "pck@50": pck.get("pck@50", 0),
             "lr": current_lr,
         })
-        torch.save({"model": model.state_dict(), "args": vars(args)}, last_path)
-
+        should_stop = False
         if mpjpe < best_metric:
             best_metric = mpjpe
             no_improve = 0
@@ -186,13 +250,39 @@ def train_t1_rgb_teacher_mpjpe(args, train_loader, val_loader, device):
             no_improve += 1
             if args.patience > 0 and no_improve >= args.patience:
                 print(f"  Early stopping! No improvement for {args.patience} epochs")
-                break
+                should_stop = True
 
         save_json(history, hist_path)
+        torch.save(
+            {
+                "model": model.state_dict(),
+                "args": vars(args),
+                "epoch": ep,
+                "optimizer": opt.state_dict(),
+                "scheduler": scheduler.state_dict(),
+                "history": history,
+                "best_metric": best_metric,
+                "no_improve": no_improve,
+                "rng_state": checkpoint_rng_state(),
+            },
+            last_path,
+        )
+        if should_stop:
+            break
 
     print("=" * 60)
     print(f"T1 RGB-only Teacher finished! Best MPJPE: {best_metric*1000:.1f}mm")
     print("=" * 60)
+    save_json(
+        {
+            "status": "complete",
+            "best_val_mpjpe": best_metric,
+            "checkpoint": "best.pth",
+            "last_epoch": int(history[-1]["epoch"]) if history else 0,
+            "completed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        },
+        os.path.join(run_dir, "train_complete.json"),
+    )
     sys.stdout = logger.terminal
     logger.close()
     return best_metric, run_dir
@@ -262,7 +352,9 @@ def build_parser():
                         help="Auxiliary bone-length consistency loss weight.")
     parser.add_argument("--log_every", type=int, default=1000)
     parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--eval_num_workers", type=int, default=None)
     parser.add_argument("--run_dir", type=str, default=None)
+    parser.add_argument("--resume_last", action="store_true")
     parser.add_argument("--skip_final_test", action="store_true")
     parser.add_argument("--temporal_rgb", action="store_true",
                         help="Use a temporal RGB 2D-pose sequence teacher instead of single-frame RGB.")
@@ -297,6 +389,7 @@ def main():
         args.dataset_root, cfg, args.window, args.stride,
         args.batch_size, args.val_batch_size, role="teacher",
         num_workers=args.num_workers,
+        eval_num_workers=args.eval_num_workers,
         include_rgb_window=args.temporal_rgb,
     )
     print(f"Train samples (windowed): {len(train_ds)}")

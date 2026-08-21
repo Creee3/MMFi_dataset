@@ -866,14 +866,22 @@ def _split_dataset_config(config, split_name, dataset_names):
     result = {}
     for dataset_name in dataset_names:
         entry = split_cfg[dataset_name]
-        actions = _resolve_actions(entry['actions'], protocol_actions)
         default_split = 'training' if dataset_name == 'train_dataset' else 'validation'
         if dataset_name == 'test_dataset':
             default_split = 'test'
+        data_form = entry.get('data_form')
+        if data_form is None:
+            actions = _resolve_actions(entry['actions'], protocol_actions)
+            data_form = {subject: actions for subject in entry['subjects']}
+        else:
+            data_form = {
+                subject: _resolve_actions(actions, protocol_actions)
+                for subject, actions in data_form.items()
+            }
         result[dataset_name] = {
             'modality': config['modality'],
             'split': entry.get('split', default_split),
-            'data_form': {subject: actions for subject in entry['subjects']},
+            'data_form': data_form,
         }
     return result
 
@@ -935,6 +943,18 @@ def load_config(config_file, split):
         if env_teacher_val:
             split_cfg.setdefault("teacher_val_dataset", {})["subjects"] = [
                 s.strip() for s in env_teacher_val.split(",") if s.strip()]
+    env_teacher_train_form = os.environ.get("TEACHER_CV_TRAIN_FORM_JSON")
+    env_teacher_val_form = os.environ.get("TEACHER_CV_VAL_FORM_JSON")
+    if split == "teacher_student_split" and (
+            env_teacher_train_form or env_teacher_val_form):
+        split_cfg = cfg.setdefault("teacher_student_split", {})
+        if env_teacher_train_form:
+            split_cfg.setdefault("train_dataset", {})["data_form"] = (
+                json.loads(env_teacher_train_form))
+        if env_teacher_val_form:
+            val_form = json.loads(env_teacher_val_form)
+            split_cfg.setdefault("teacher_val_dataset", {})["data_form"] = val_form
+            split_cfg.setdefault("student_val_dataset", {})["data_form"] = val_form
     heldout_cfg = cfg.setdefault("heldout_split", {})
     env_enabled = os.environ.get("HELDOUT_SPLIT_ENABLED")
     if env_enabled is not None:

@@ -9,6 +9,9 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.cache/
+.paper-memory/
+.vizdeps/
 
 # Local environments
 .venv/
@@ -23,6 +26,7 @@ Wi-Pose/
 experiment_results/*
 !experiment_results/*.md
 strict_offline_runs/
+strict_offline_runs_*/
 *.pth
 *.pt
 *.ckpt
@@ -45,3 +49,24 @@ strict_offline_runs/
 *.pdf
 *.docx
 *.zip
+
+# Local audits, transfer bundles, and historical snapshots
+.cloud_5090_audit_*/
+.staging_*/
+Zipfiles/
+backup_exports/
+rerun_archives/
+PrivPose_本地归档_*/
+_cloud_sync_archive_*/
+metafi_s2p2_cloud_bundle_*/
+s2p2_equal_samples_mpjpe_cloud_bundle_*/
+canonical_eval_*/
+p2_pck10_50_archive_*/
+p2s2_per_joint_baseline_rerun_*/
+s2p2_results_logs/
+tmp/
+
+# Paper workspace and downloaded reference implementations
+IEEE-Transactions-LaTeX2e-templates-and-instructions/
+资料收集/
+pose日志【整合】/

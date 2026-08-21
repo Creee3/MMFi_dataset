@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "reference": "metafi_s2p2_cloud_bundle_20260817",
+  "scope": "model files used by the formal cloud rerun",
+  "exclude": ["__pycache__", ".ipynb_checkpoints"],
+  "files": {
+    "model/hpeli/SK_network.py": "b93da3fc43bf01013f5a2f89f8b275735957f788a2816a6fa874329716a9fced",
+    "model/hpeli/hpeli.py": "9a6a1b88263742ebbc14182849a22f3e7eb1757a31315ab8e1a6db028313184b",
+    "model/metafi/ChannelTrans.py": "2099da3cc1d5dd4837143c5b63ebadc77368fc95dda569ada11831329984ca8c",
+    "model/metafi/mynetwork.py": "d363423f4ee24839f7b7efc33ee4b0470a48ee73cdedafe7197b38741acd38d4",
+    "model/model.py": "f992c9d1f226adfd25664c6025f1350140447d3b6cbeaa56e520d2543f54f9ce",
+    "model/utils/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "model/utils/graph.py": "624c0a4b2b4e13dca532c92e5c4f4a74ead7ff87fed6729a8f1c2bd4e290d028",
+    "model/utils/tgcn.py": "aa75f98f8a37cf7ccc70270c27bb405acb0add4ea9e8f6814040adf4fcb3d71c"
+  }
+}

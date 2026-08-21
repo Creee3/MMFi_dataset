@@ -1,6 +1,22 @@
 ![Maintenance](https://img.shields.io/badge/Maintained%3F-YES-green.svg)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7983467.svg)](https://doi.org/10.5281/zenodo.7983467)
 
+# PrivPose 实验代码
+
+本分支在 MM-Fi 官方工具箱基础上保存 PrivPose 的训练、评估与对比实验代码。
+数据集、checkpoint、训练日志和历史云主机归档不上传到 GitHub。
+
+当前主要入口：
+
+- PrivPose 完整 `3x3`：`run_s2p2_3x3_rank2.py`
+- PrivPose Teacher / Student：`train_t1_rgb_teacher_mpjpe.py` 和 `train_lupi_rgb_teacher_mpjpe.py`
+- MetaFi++、HPE-Li、DT-Pose 等样本实验：`s2p2_equal_samples_mpjpe_code_20260820/`
+- 5090 统一启动器：`cloud_5090_launchers_20260821/launchers/`
+
+请先阅读 [PrivPose 快速使用说明](PRIVPOSE_QUICKSTART.md) 和
+[5090 四模型唯一入口](cloud_5090_launchers_20260821/00_PROJECT_ENTRY_CN.md)。
+原始 MM-Fi 数据集工具箱说明保留在下方。
+
 # Toolbox for MM-Fi Dataset
 
 ## Introduction
