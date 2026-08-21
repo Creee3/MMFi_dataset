@@ -53,6 +53,11 @@ strict_offline_runs_*/
 # Local audits, transfer bundles, and historical snapshots
 .cloud_5090_audit_*/
 .staging_*/
+_root_archive_20260821/**
+!_root_archive_20260821/README_中文.md
+!_root_archive_20260821/local_archive_manifest.json
+!_root_archive_20260821/maintenance_tools/
+!_root_archive_20260821/maintenance_tools/organize_local_like_5090.py
 Zipfiles/
 backup_exports/
 rerun_archives/

@@ -1,0 +1,748 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-21T23:58:20+08:00",
+  "root": "/Users/lecha/Desktop/four_grade/graduation_article/data_pdf/MMFi_Dataset",
+  "policy": [
+    "No files are deleted.",
+    "Moves are same-volume renames and are verified after completion.",
+    "Model navigation uses relative symlinks to avoid duplicate source trees.",
+    "The local paper and reference workspaces retain their original paths."
+  ],
+  "moves": [
+    {
+      "source": "cloud_5090_launchers_20260821/00_PROJECT_ENTRY_CN.md",
+      "destination": "00_PROJECT_ENTRY_CN.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 6556,
+      "sha256": "83d0ae886a47faa37fe53364d820c63346ab657893843f6e33ad35c2d9060318"
+    },
+    {
+      "source": "cloud_5090_launchers_20260821/launchers",
+      "destination": "launchers",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 18,
+      "bytes": 20160
+    },
+    {
+      "source": "cloud_5090_launchers_20260821/models_README_models_CN.md",
+      "destination": "models/README_models_CN.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 1304,
+      "sha256": "15620d884bff129112ce3451737efb6b3dbfa5a77b8381d224c39c978c012efc"
+    },
+    {
+      "source": "cloud_5090_launchers_20260821/baseline_equal_samples_README_CN.md",
+      "destination": "models/baseline_equal_samples/README_CN.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 368,
+      "sha256": "3e423f98a3a623101aa44a2350fef019b564f795802ba282a91bd73f75820ebb"
+    },
+    {
+      "source": "cloud_5090_launchers_20260821/model_docs/dtpose_README_CN.md",
+      "destination": "models/dtpose/README_CN.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 460,
+      "sha256": "4063e8de5d58fdeb40f0d1839cc0f518c2117e87115f7a7ac4a2dee92ae6a38a"
+    },
+    {
+      "source": "cloud_5090_launchers_20260821/model_docs/hpeli_README_CN.md",
+      "destination": "models/hpeli/README_CN.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 297,
+      "sha256": "df73014471cf8158bebf0a8107841fae56adfb38f8337a810ec549118e056808"
+    },
+    {
+      "source": "cloud_5090_launchers_20260821/model_docs/metafi_README_CN.md",
+      "destination": "models/metafi_pp/README_CN.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 250,
+      "sha256": "ef2368993c4b999071ca9e3f55cf4373f82f307d23adfc4c14accaf4ef6be683"
+    },
+    {
+      "source": "cloud_5090_launchers_20260821/model_docs/privpose_README_CN.md",
+      "destination": "models/privpose/README_CN.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 454,
+      "sha256": "ecde070006795bac82f25210de470c39e055cb2c1be8188f2913b65499af7547"
+    },
+    {
+      "source": "p2s2_per_joint_baseline_rerun_20260816/source",
+      "destination": "models/dtpose/official_source",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 36,
+      "bytes": 21396012
+    },
+    {
+      "source": ".cloud_5090_audit_20260821",
+      "destination": "_root_archive_20260821/audit_records/cloud_5090_audit_20260821",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 6,
+      "bytes": 6436
+    },
+    {
+      "source": ".staging_s2p2_equal_samples_mpjpe_code_20260820",
+      "destination": "_root_archive_20260821/transfer_and_incomplete/staging_s2p2_equal_samples_mpjpe_code_20260820",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 46,
+      "bytes": 730182
+    },
+    {
+      "source": "__pycache__",
+      "destination": "_root_archive_20260821/cache_and_metadata/__pycache__",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 34,
+      "bytes": 780468
+    },
+    {
+      "source": "tmp",
+      "destination": "_root_archive_20260821/cache_and_metadata/tmp",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 262,
+      "bytes": 60403802
+    },
+    {
+      "source": "PrivPose_本地归档_20260815",
+      "destination": "_root_archive_20260821/previous_archives/PrivPose_本地归档_20260815",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 49,
+      "bytes": 455892
+    },
+    {
+      "source": "_archived_legacy_20260619",
+      "destination": "_root_archive_20260821/previous_archives/_archived_legacy_20260619",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 19,
+      "bytes": 393546
+    },
+    {
+      "source": "_cloud_sync_archive_20260704",
+      "destination": "_root_archive_20260821/previous_archives/_cloud_sync_archive_20260704",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 61,
+      "bytes": 865217
+    },
+    {
+      "source": "backup_exports",
+      "destination": "_root_archive_20260821/transfer_and_incomplete/backup_exports",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 16,
+      "bytes": 257943
+    },
+    {
+      "source": "canonical_eval_s2p2_20260818",
+      "destination": "_root_archive_20260821/evaluation_projects/canonical_eval_s2p2_20260818",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 47,
+      "bytes": 61786659
+    },
+    {
+      "source": "p2_pck10_50_archive_20260816",
+      "destination": "_root_archive_20260821/evaluation_projects/p2_pck10_50_archive_20260816",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 48,
+      "bytes": 1136751
+    },
+    {
+      "source": "p2s2_per_joint_baseline_rerun_20260816",
+      "destination": "_root_archive_20260821/evaluation_projects/p2s2_per_joint_baseline_rerun_20260816",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 13,
+      "bytes": 86266
+    },
+    {
+      "source": "s2p2_equal_samples_mpjpe_cloud_bundle_20260818",
+      "destination": "_root_archive_20260821/old_code_bundles/s2p2_equal_samples_mpjpe_cloud_bundle_20260818",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 58,
+      "bytes": 331645933
+    },
+    {
+      "source": "experiment_results",
+      "destination": "_root_archive_20260821/historical_results/experiment_results",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 566,
+      "bytes": 4133980837
+    },
+    {
+      "source": "pose日志【整合】",
+      "destination": "_root_archive_20260821/historical_results/pose日志【整合】",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 111,
+      "bytes": 3199940
+    },
+    {
+      "source": "s2p2_results_logs",
+      "destination": "_root_archive_20260821/historical_results/s2p2_results_logs",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 7,
+      "bytes": 18320
+    },
+    {
+      "source": "strict_offline_runs_4090_20260812",
+      "destination": "_root_archive_20260821/historical_results/strict_offline_runs_4090_20260812",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 9,
+      "bytes": 40833601
+    },
+    {
+      "source": "cloud_5090_launchers_20260821",
+      "destination": "_root_archive_20260821/transfer_and_incomplete/cloud_5090_launchers_20260821_container",
+      "status": "moved_verified",
+      "kind": "directory",
+      "file_count": 0,
+      "bytes": 0
+    },
+    {
+      "source": "check_s2p2_data_integrity.py",
+      "destination": "_root_archive_20260821/dataset_cleanup_history/root_tools/check_s2p2_data_integrity.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 8591,
+      "sha256": "e4217295ad9a9751a45cc5656fc80b47d337daee566d2d77fae22ae54c80a33b"
+    },
+    {
+      "source": "cleanup_unused_mmfi_modalities.py",
+      "destination": "_root_archive_20260821/dataset_cleanup_history/root_tools/cleanup_unused_mmfi_modalities.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 11216,
+      "sha256": "b63e492ed83bf6613bada843c12a37ac58016b4360229b6620d4bb6398627c29"
+    },
+    {
+      "source": "diagnose_s2p2_cloud_env.bat",
+      "destination": "_root_archive_20260821/maintenance_tools/diagnose_s2p2_cloud_env.bat",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 527,
+      "sha256": "2feff02271b7555769599263300309808eb6e22b1bacb9b7109d2921ddc778ed"
+    },
+    {
+      "source": "diagnose_s2p2_cloud_env.py",
+      "destination": "_root_archive_20260821/maintenance_tools/diagnose_s2p2_cloud_env.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 17184,
+      "sha256": "df694dc057c21dd9861a0bf70e7202a2ada37188e5e342fa6789aa27878661a9"
+    },
+    {
+      "source": "inspect_s2p2_tuning_logs.py",
+      "destination": "_root_archive_20260821/maintenance_tools/inspect_s2p2_tuning_logs.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 11684,
+      "sha256": "77179fbfc73d3ae119b48f0398717cd6fb544ee34ab616e2468fc15eba6050a0"
+    },
+    {
+      "source": "rebuild_s2p2_optuna_bookkeeping.py",
+      "destination": "_root_archive_20260821/maintenance_tools/rebuild_s2p2_optuna_bookkeeping.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 11071,
+      "sha256": "97f59f0766e1b83a84bfdac9ca69e350e35009ba938819b41db32a166bd6293d"
+    },
+    {
+      "source": "quick_check.sh",
+      "destination": "_root_archive_20260821/maintenance_tools/quick_check.sh",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 908,
+      "sha256": "d7715b1072f6eab72dde3fedd8430532fc8cdcb496d0cb0b7f415a731e658518"
+    },
+    {
+      "source": "optuna_study.db",
+      "destination": "_root_archive_20260821/cache_and_metadata/optuna_study.db",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "evaluate_final_test.sh",
+      "destination": "_root_archive_20260821/evaluation_tools/evaluate_final_test.sh",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 937,
+      "sha256": "b1aa45a518c660eaa7fa2296abeb30dde9825d5cd0b374f162845319fe68bede"
+    },
+    {
+      "source": "evaluate_final_test_breakdown_mpjpe.py",
+      "destination": "_root_archive_20260821/evaluation_tools/evaluate_final_test_breakdown_mpjpe.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 5618,
+      "sha256": "b1449b45311294206fbf3c6b7eeba93decc64786c0723299e6c75e520f3c1756"
+    },
+    {
+      "source": "evaluate_final_test_checkpoints_mpjpe.py",
+      "destination": "_root_archive_20260821/evaluation_tools/evaluate_final_test_checkpoints_mpjpe.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 4284,
+      "sha256": "8595f88002ba0c0ecc1427aa0d47a3b043e2d77d772676c02f05a102692be5e6"
+    },
+    {
+      "source": "evaluate_final_test_mpjpe.py",
+      "destination": "_root_archive_20260821/evaluation_tools/evaluate_final_test_mpjpe.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 5814,
+      "sha256": "74802e39dd0d9b123ff87ba1a85fb9381e7b2cefff74db22bd35e9919cb4479a"
+    },
+    {
+      "source": "evaluate_pck_10_50.py",
+      "destination": "_root_archive_20260821/evaluation_tools/evaluate_pck_10_50.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 10937,
+      "sha256": "d92d6080da646509cd63b04645cec69723bb8cf438975b72e31bbbeb112dc8a8"
+    },
+    {
+      "source": "evaluate_per_joint_mpjpe.py",
+      "destination": "_root_archive_20260821/evaluation_tools/evaluate_per_joint_mpjpe.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 7157,
+      "sha256": "53225e5626f8dcec80660b8ee4e7e7f0a79b90c42e9be6b72c2ba0294c202db1"
+    },
+    {
+      "source": "summarize_baseline_p2_pck.py",
+      "destination": "_root_archive_20260821/evaluation_tools/summarize_baseline_p2_pck.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 8652,
+      "sha256": "441a2b1007b7c6c7f82672a6954693bac7972117ee297018168d2973f6d31977"
+    },
+    {
+      "source": "run_s1_cmc_from_epoch1.py",
+      "destination": "_root_archive_20260821/old_privpose_scripts/run_s1_cmc_from_epoch1.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 7022,
+      "sha256": "7148d4d64e901c1ca45125bd956bbd29dcd57045478f6a115846e8b797e5d166"
+    },
+    {
+      "source": "run_s2p2_3x3_all_zero.py",
+      "destination": "_root_archive_20260821/old_privpose_scripts/run_s2p2_3x3_all_zero.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 9905,
+      "sha256": "cd537c01276c25967eced2e40a94bfee8fe8bbe6b70ef4e683748dfa1718f1e1"
+    },
+    {
+      "source": "run_s2p2_3x3_all_zero_cloud.bat",
+      "destination": "_root_archive_20260821/old_privpose_scripts/run_s2p2_3x3_all_zero_cloud.bat",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 318,
+      "sha256": "8dd6932a0459c1996c119b3047b5f38770ebc0b8fa9b9956a8cdb33404e46f5e"
+    },
+    {
+      "source": "run_s2p2_csi_perturbation_ablation.py",
+      "destination": "_root_archive_20260821/old_privpose_scripts/run_s2p2_csi_perturbation_ablation.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 8655,
+      "sha256": "2f608954dd638d5f7fb78bec95048be48645a5fa90d9d3f7f9fd5abc17589a9c"
+    },
+    {
+      "source": "run_s2p2_csi_perturbation_ablation_queued.bat",
+      "destination": "_root_archive_20260821/old_privpose_scripts/run_s2p2_csi_perturbation_ablation_queued.bat",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 1081,
+      "sha256": "2ab998c47966ce42ba26553429d2ed0441f2e843e7dc897b1b74f11e801fa517"
+    },
+    {
+      "source": "run_s2p2_mmfi_original_jobs.py",
+      "destination": "_root_archive_20260821/old_privpose_scripts/run_s2p2_mmfi_original_jobs.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 943,
+      "sha256": "0b63a2e05ff42076ee9d00e0175eaa08855a37e51fb67c60ebc8c624d3cf661e"
+    },
+    {
+      "source": "run_s2p2_selected_jobs.py",
+      "destination": "_root_archive_20260821/old_privpose_scripts/run_s2p2_selected_jobs.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 6195,
+      "sha256": "fe12a8a0b5af12c67c251dc44fb4c02f29345d687acd9197aa21a980d87bb6c0"
+    },
+    {
+      "source": "run_s2p2_strict_sequence_jobs.py",
+      "destination": "_root_archive_20260821/old_privpose_scripts/run_s2p2_strict_sequence_jobs.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 4653,
+      "sha256": "eac1a5888d4bfe768829eeff77d7f99f8572be83c5f3e72493a7b966090fff77"
+    },
+    {
+      "source": "run_s2p2_strict_subject_jobs.py",
+      "destination": "_root_archive_20260821/old_privpose_scripts/run_s2p2_strict_subject_jobs.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 4764,
+      "sha256": "710fef5a06290d2ce3b4c4c35e74a2d7abf66170a7dbd521b3e5f93cce602dd2"
+    },
+    {
+      "source": "run_s2p2_wifi_cmc_mix20.py",
+      "destination": "_root_archive_20260821/old_privpose_scripts/run_s2p2_wifi_cmc_mix20.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 12577,
+      "sha256": "f9b352cca8c417e73d9d57bdc680dd5f09b813c100902d0182f6db9f0462716b"
+    },
+    {
+      "source": "run_t1_rgb_teacher_s2p2_cv4.py",
+      "destination": "_root_archive_20260821/old_privpose_scripts/run_t1_rgb_teacher_s2p2_cv4.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 7873,
+      "sha256": "eeff9a6097bf538b45adbd6fa1179e9ad69d0d54d997de7a378741faba33a698"
+    },
+    {
+      "source": "train_baseline_mpjpe.py",
+      "destination": "_root_archive_20260821/old_privpose_scripts/train_baseline_mpjpe.py",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 25114,
+      "sha256": "1cd5e9f879fbfb67d2698224192f77845ca3d9042af75d60976edc478e882830"
+    },
+    {
+      "source": "run_formal_3x3.sh",
+      "destination": "_root_archive_20260821/old_automation/run_formal_3x3.sh",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 1185,
+      "sha256": "95cd66a11ffaf4127f69fc26e9c9068c2138764d5408c88e7028080148a42118"
+    },
+    {
+      "source": "train_rgb_teacher.sh",
+      "destination": "_root_archive_20260821/old_automation/train_rgb_teacher.sh",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 630,
+      "sha256": "9641bac151fc97ab7c60b717f818780bd9b27a8fda5c9ec77ee2dd91359d3412"
+    },
+    {
+      "source": "watch_metafi_then_per_joint_eval_20260817.ps1",
+      "destination": "_root_archive_20260821/old_automation/watch_metafi_then_per_joint_eval_20260817.ps1",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 2485,
+      "sha256": "9208f25f870febdbcf71a70d1a22739560b4d38e813e77161c83da85f500cca5"
+    },
+    {
+      "source": "5090云端代码位置与接手说明_中文.md",
+      "destination": "_root_archive_20260821/old_docs/5090云端代码位置与接手说明_中文.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 6847,
+      "sha256": "bea00f0217d7c9467dc07543fb2243cabe9a743d079e4f2da53274595bac6050"
+    },
+    {
+      "source": "CODE_GUIDE.md",
+      "destination": "_root_archive_20260821/old_docs/CODE_GUIDE.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 10216,
+      "sha256": "4bb74ced4c903585127fe34bb9daf8aa58caa0132e240a8b6c84aec5dce9388d"
+    },
+    {
+      "source": "PRIVPOSE_QUICKSTART.md",
+      "destination": "_root_archive_20260821/old_docs/PRIVPOSE_QUICKSTART.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 4877,
+      "sha256": "3cc976e8bbe051c8d9e4cb3bbaf385be0acd7ccd253f062e973b051eb763c822"
+    },
+    {
+      "source": "PrivPose代码使用说明_中文.md",
+      "destination": "_root_archive_20260821/old_docs/PrivPose代码使用说明_中文.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 6502,
+      "sha256": "ac7d8cc49a622862cf703b1df2f39789f2ca4a60bab5132451115d6c12274a98"
+    },
+    {
+      "source": "S2P2消融实验说明.md",
+      "destination": "_root_archive_20260821/old_docs/S2P2消融实验说明.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 3086,
+      "sha256": "a93f1dfe1bebc6bf13d6b928ddf0b4319b8628d45be352d12487710ba719160f"
+    },
+    {
+      "source": "云端同步清单_S2P2.md",
+      "destination": "_root_archive_20260821/old_docs/云端同步清单_S2P2.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 2444,
+      "sha256": "1a863c26aa21f3af13cc32e4f9385beae4c69aed825de10c7a3910915a03ead3"
+    },
+    {
+      "source": "云端四模型目录说明_中文.md",
+      "destination": "_root_archive_20260821/old_docs/云端四模型目录说明_中文.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 4019,
+      "sha256": "d04dc8200ddf10eb3680d3ede47919c83b4cc1d4f809d7232e23f0f6747416f8"
+    },
+    {
+      "source": "四模型统一评估维护入口_中文.md",
+      "destination": "_root_archive_20260821/old_docs/四模型统一评估维护入口_中文.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 1217,
+      "sha256": "c10e08f3df0f1664cbf95c5e510dddf538e494c69b525f9c30bad52e77cd16cd"
+    },
+    {
+      "source": "对比模型调优与正式训练参数记录_中文.md",
+      "destination": "_root_archive_20260821/old_docs/对比模型调优与正式训练参数记录_中文.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 9088,
+      "sha256": "fb0890216d310600ac183880ec7e8b7be0de06fdc9e7740b2f5d3fbe6bd67997"
+    },
+    {
+      "source": "本地主代码目录说明.md",
+      "destination": "_root_archive_20260821/old_docs/本地主代码目录说明.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 1805,
+      "sha256": "83a83a09537a9d32b27a9ff760639da352bc2a8b228f54b4e7393b0f4293cbd4"
+    },
+    {
+      "source": "P2四模型联合对比_中文.md",
+      "destination": "_root_archive_20260821/historical_reports/P2四模型联合对比_中文.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 4939,
+      "sha256": "0e72474b9390013e2507a5e234681e933771cdc6ca823da606cc8c40685f9723"
+    },
+    {
+      "source": "baseline_p2_pck_10_50_summary_中文.md",
+      "destination": "_root_archive_20260821/historical_reports/baseline_p2_pck_10_50_summary_中文.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 1685,
+      "sha256": "84d12de3fdf37e2fd4c3dbaec102cfbc75aaf50afc3d90ebe4cb8daccc84ca35"
+    },
+    {
+      "source": "paper_revision_checklist.md",
+      "destination": "_root_archive_20260821/historical_reports/paper_revision_checklist.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 14171,
+      "sha256": "f101d7c9f3ccdb02e2a6fcfc9e53c6afd05f7a448195daec5dedb6951c3f270d"
+    },
+    {
+      "source": "近三日工作总账与严谨性核验_20260817.md",
+      "destination": "_root_archive_20260821/historical_reports/近三日工作总账与严谨性核验_20260817.md",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 24606,
+      "sha256": "9683003bd99523ed202189e50cc07edccaa48b1afe312be73ea51fbd15c20b32"
+    },
+    {
+      "source": "baseline_p2_pck_10_50_summary.json",
+      "destination": "_root_archive_20260821/historical_reports/baseline_p2_pck_10_50_summary.json",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 26842,
+      "sha256": "e574025a348fc22d261f247912c76418794add48430eebe38a270631b950ecd0"
+    },
+    {
+      "source": "p2_s2_per_joint_privpose_summary.json",
+      "destination": "_root_archive_20260821/historical_reports/p2_s2_per_joint_privpose_summary.json",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 8507,
+      "sha256": "ef9905a518c48b62c0a7bb249d3d1c20d27464eada457b2396dd03d99cdac265"
+    },
+    {
+      "source": "p2_pck10_50_archive_20260816.zip",
+      "destination": "Zipfiles/p2_pck10_50_archive_20260816.zip",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 288342,
+      "sha256": "aeebab12f5e0eae574707689827bf6a4e916639640b5d9acff5ccd994b6285b5"
+    },
+    {
+      "source": "p2s2_eval_and_metafi_logging_patch_20260817.zip",
+      "destination": "Zipfiles/p2s2_eval_and_metafi_logging_patch_20260817.zip",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 16849,
+      "sha256": "db5ea8b3de30133556e5102dfcace7d5358d083eb59813ea953589d539117670"
+    },
+    {
+      "source": "p2s2_per_joint_baseline_code_v2.zip",
+      "destination": "Zipfiles/p2s2_per_joint_baseline_code_v2.zip",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 111138,
+      "sha256": "4915cf6ab2f83cd0085ec46b207b94c0bca2fb2b1660a01f9308d4791f7f2376"
+    },
+    {
+      "source": "p2s2_per_joint_baseline_rerun_20260816.zip",
+      "destination": "Zipfiles/p2s2_per_joint_baseline_rerun_20260816.zip",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 19546053,
+      "sha256": "5e7da0c80b28ea0c8865f506e05ca66816e5d0ae29a62eda50e8c7ec45931e16"
+    },
+    {
+      "source": "s2p2_results_logs.zip",
+      "destination": "Zipfiles/s2p2_results_logs.zip",
+      "status": "moved_verified",
+      "kind": "file",
+      "file_count": 1,
+      "bytes": 41729,
+      "sha256": "5e9778b660ac3127937a0b7260e6ceba14b301d7f9792495481a6f777e7d0724"
+    }
+  ],
+  "symlinks": [
+    {
+      "path": "models/baseline_equal_samples/code",
+      "target": "../../s2p2_equal_samples_mpjpe_code_20260820",
+      "resolved": "/Users/lecha/Desktop/four_grade/graduation_article/data_pdf/MMFi_Dataset/s2p2_equal_samples_mpjpe_code_20260820",
+      "status": "created"
+    },
+    {
+      "path": "models/metafi_pp/code",
+      "target": "../../metafi_s2p2_cloud_bundle_20260817",
+      "resolved": "/Users/lecha/Desktop/four_grade/graduation_article/data_pdf/MMFi_Dataset/metafi_s2p2_cloud_bundle_20260817",
+      "status": "created"
+    },
+    {
+      "path": "models/dtpose/code",
+      "target": "official_source",
+      "resolved": "/Users/lecha/Desktop/four_grade/graduation_article/data_pdf/MMFi_Dataset/models/dtpose/official_source",
+      "status": "created"
+    },
+    {
+      "path": "models/hpeli/code",
+      "target": "../dtpose/official_source",
+      "resolved": "/Users/lecha/Desktop/four_grade/graduation_article/data_pdf/MMFi_Dataset/models/dtpose/official_source",
+      "status": "created"
+    },
+    {
+      "path": "models/dtpose/checkpoints",
+      "target": "../../rerun_archives/dtpose_762_20260816/s2p2_best_checkpoints",
+      "resolved": "/Users/lecha/Desktop/four_grade/graduation_article/data_pdf/MMFi_Dataset/rerun_archives/dtpose_762_20260816/s2p2_best_checkpoints",
+      "status": "created"
+    },
+    {
+      "path": "models/hpeli/checkpoints",
+      "target": "../../rerun_archives/hpeli_792_20260811/s2p2_best_checkpoints",
+      "resolved": "/Users/lecha/Desktop/four_grade/graduation_article/data_pdf/MMFi_Dataset/rerun_archives/hpeli_792_20260811/s2p2_best_checkpoints",
+      "status": "created"
+    }
+  ],
+  "active_required_verified": [
+    "00_PROJECT_ENTRY_CN.md",
+    "README.md",
+    "common.py",
+    "config.yaml",
+    "run_s2p2_3x3_rank2.py",
+    "run_s2p2_cmc_hparam_tuning.py",
+    "run_s2p2_temporal_cmc_mixup_ablation.py",
+    "train_lupi_rgb_teacher_mpjpe.py",
+    "train_t1_rgb_teacher_mpjpe.py",
+    "mmfi_lib",
+    "launchers",
+    "models",
+    "data_base",
+    "strict_offline_runs",
+    "rerun_archives",
+    "Zipfiles",
+    "s2p2_equal_samples_mpjpe_code_20260820",
+    "metafi_s2p2_cloud_bundle_20260817",
+    "IEEE-Transactions-LaTeX2e-templates-and-instructions",
+    "资料收集"
+  ],
+  "completed_at": "2026-08-21T23:58:20+08:00"
+}

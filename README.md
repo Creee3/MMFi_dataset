@@ -1,20 +1,27 @@
 ![Maintenance](https://img.shields.io/badge/Maintained%3F-YES-green.svg)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7983467.svg)](https://doi.org/10.5281/zenodo.7983467)
 
-# PrivPose 实验代码
+# PrivPose / MM-Fi 四模型实验代码
 
-本分支在 MM-Fi 官方工具箱基础上保存 PrivPose 的训练、评估与对比实验代码。
-数据集、checkpoint、训练日志和历史云主机归档不上传到 GitHub。
+本分支在 MM-Fi 官方工具箱基础上保存 PrivPose、MetaFi++、HPE-Li 和 DT-Pose
+的训练与统一对比代码。数据集、checkpoint、训练日志和历史云主机归档不上传到
+GitHub。
 
-当前主要入口：
+2026-08-21 起，本地与学校 5090 使用相同的导航结构：
 
-- PrivPose 完整 `3x3`：`run_s2p2_3x3_rank2.py`
-- PrivPose Teacher / Student：`train_t1_rgb_teacher_mpjpe.py` 和 `train_lupi_rgb_teacher_mpjpe.py`
-- MetaFi++、HPE-Li、DT-Pose 等样本实验：`s2p2_equal_samples_mpjpe_code_20260820/`
-- 5090 统一启动器：`cloud_5090_launchers_20260821/launchers/`
+- [`00_PROJECT_ENTRY_CN.md`](00_PROJECT_ENTRY_CN.md)：四模型唯一中文总入口；
+- [`launchers/`](launchers/)：学校 Windows 5090 的编号 CMD 启动器；
+- [`models/`](models/)：四模型源码和历史 checkpoint 导航；
+- `s2p2_equal_samples_mpjpe_code_20260820/`：三个 baseline 的活动等样本代码；
+- `_root_archive_20260821/`：本地非主线内容的可恢复归档。
 
-请先阅读 [PrivPose 快速使用说明](PRIVPOSE_QUICKSTART.md) 和
-[5090 四模型唯一入口](cloud_5090_launchers_20260821/00_PROJECT_ENTRY_CN.md)。
+PrivPose 的活动源码仍保留在根目录，正式入口是 `run_s2p2_3x3_rank2.py`。三个
+baseline 的网络没有合并成同一个模型，只共用数据入口和训练调度；各自实现仍在
+独立模块中。
+
+macOS 的 `models/*/code` 使用相对符号链接，5090 使用 Windows 目录联接，二者
+都只指向一份实体源码。本地额外保留论文目录和 `资料收集/`，不要求上传到 5090。
+
 原始 MM-Fi 数据集工具箱说明保留在下方。
 
 # Toolbox for MM-Fi Dataset
